@@ -347,6 +347,10 @@ function verifierMdp() {
   if(val === PWD) {
     document.getElementById('pwd-screen').style.display='none';
     document.getElementById('main-wrap').style.display='block';
+    // Démarrer le simulateur uniquement après authentification
+    initMicro();
+    renderPlanning();
+    showQ();
   } else {
     document.getElementById('pwd-error').style.display='block';
     document.getElementById('pwd-input').value='';
@@ -1462,11 +1466,7 @@ function resetProfil() {
 // Initialiser les pills langues
 initPills('lpills-sim','fr',function(k){langSim=k;});
 
-// Démarrer directement sans modale
-// La modale apparaît après la première séance
-initMicro();
-renderPlanning();
-showQ();
+// NE PAS démarrer ici — le démarrage se fait après vérification du mot de passe
 </script>
 </body>
 </html>
