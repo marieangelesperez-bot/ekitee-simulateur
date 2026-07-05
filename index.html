@@ -1279,28 +1279,62 @@ function renderLexCards() {
         btnMic.textContent='🎤 Me lire';
         btnMic.onclick=(function(ex, bm){
           return function(){
-            if(bm.textContent==='⏹ Stop'){
+            // Si déjà en mode répétition — arrêter
+            if(bm.getAttribute('data-recording')==='1'){
               if(recognition){try{recognition.stop();}catch(e){}}
+              bm.setAttribute('data-recording','0');
               bm.textContent='🎤 Me lire';
               bm.style.background='#fcebeb';
+              bm.style.color='#a32d2d';
               return;
             }
-            speak(ex,'fr-FR', function(){
-              // Après écoute, activer le micro pour que l'apprenant répète
-              bm.textContent='🎤 Répétez...';
-              bm.style.background='#e24b4a';
-              bm.style.color='#fff';
-              var r=buildRec();
-              if(r){
-                r.onend=function(){
+            // Lire l'exemple d'abord
+            synth.cancel();
+            var u=new SpeechSynthesisUtterance(nettoyerTexte(ex));
+            u.lang='fr-FR';
+            u.rate=0.85;
+            u.onend=function(){
+              // Délai pour laisser le navigateur libérer l'audio
+              setTimeout(function(){
+                bm.textContent='🎤 Répétez — cliquez pour arrêter';
+                bm.style.background='#e24b4a';
+                bm.style.color='#fff';
+                bm.setAttribute('data-recording','1');
+                // Créer une reconnaissance dédiée pour le lexique
+                if(!hasSTT) return;
+                var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+                var rl=new SR();
+                rl.lang='fr-FR';
+                rl.interimResults=true;
+                rl.continuous=false;
+                rl.onresult=function(e){
+                  var txt='';
+                  for(var i=e.resultIndex;i<e.results.length;i++){
+                    txt+=e.results[i][0].transcript;
+                  }
+                  // Afficher ce que l'apprenant a dit
+                  bm.textContent='✅ '+txt.substring(0,30)+(txt.length>30?'...':'');
+                };
+                rl.onend=function(){
+                  setTimeout(function(){
+                    bm.setAttribute('data-recording','0');
+                    bm.textContent='🎤 Me lire';
+                    bm.style.background='#fcebeb';
+                    bm.style.color='#a32d2d';
+                  },2000);
+                };
+                rl.onerror=function(){
+                  bm.setAttribute('data-recording','0');
                   bm.textContent='🎤 Me lire';
                   bm.style.background='#fcebeb';
                   bm.style.color='#a32d2d';
                 };
-                try{r.start();}catch(e){}
-                setTimeout(function(){try{r.stop();}catch(e){}},6000);
-              }
-            });
+                try{rl.start();}catch(e){console.warn(e);}
+                // Arrêt automatique après 8 secondes
+                setTimeout(function(){try{rl.stop();}catch(e){}},8000);
+              },500);
+            };
+            synth.speak(u);
           };
         })(item.ex, btnMic);
         card.appendChild(btnMic);
