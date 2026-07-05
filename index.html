@@ -1282,13 +1282,16 @@ function renderLexCards() {
       card.appendChild(btnEx);
       // Bouton micro pour lire l'exemple
       if(hasSTT){
-        var btnMic=document.createElement('button');
+        // Div feedback transcription
+      var feedbackDiv=document.createElement('div');
+      feedbackDiv.style.cssText='display:none;margin-top:.5rem;background:#f4f3ef;border:1px solid #ccc;border-radius:7px;padding:.5rem .75rem;font-size:12px';
+      var btnMic=document.createElement('button');
         btnMic.className='abtn';
         btnMic.style.background='#fcebeb';
         btnMic.style.color='#a32d2d';
         btnMic.style.borderColor='#e24b4a';
         btnMic.textContent='🎤 Me lire';
-        btnMic.onclick=(function(ex, bm){
+        btnMic.onclick=(function(ex, bm, fd){
           var recLex=null;
           return function(){
             if(!hasSTT){alert('Micro non disponible.');return;}
@@ -1301,6 +1304,8 @@ function renderLexCards() {
               bm.style.color='#a32d2d';
               return;
             }
+            // Cacher le feedback précédent
+            fd.style.display='none';
             // Lire l'exemple
             bm.textContent='⏳ Écoute...';
             bm.style.background='#faeeda';
@@ -1310,7 +1315,7 @@ function renderLexCards() {
             u.lang='fr-FR'; u.rate=0.85;
             u.onend=function(){
               setTimeout(function(){
-                bm.textContent='🎤 Parlez — clic pour arrêter';
+                bm.textContent='⏹ Cliquez ici pour arrêter';
                 bm.style.background='#e24b4a';
                 bm.style.color='#fff';
                 // Instance dédiée lexique
@@ -1319,10 +1324,15 @@ function renderLexCards() {
                 recLex.lang='fr-FR';
                 recLex.interimResults=true;
                 recLex.continuous=true;
+                var secondes=0;
+                var compteur=setInterval(function(){
+                  secondes++;
+                  if(secondes>=30){clearInterval(compteur);}
+                },1000);
                 recLex.onresult=function(e){
                   var txt='';
                   for(var i=0;i<e.results.length;i++) txt+=e.results[i][0].transcript;
-                  bm.textContent='🟢 '+txt.substring(0,25)+(txt.length>25?'...':'')+' — clic stop';
+                  bm.textContent='🟢 '+txt.substring(0,35)+(txt.length>35?'...':'');
                 };
                 recLex.onerror=function(ev){
                   if(ev.error!=='aborted'){
@@ -1333,10 +1343,23 @@ function renderLexCards() {
                   recLex=null;
                 };
                 recLex.onend=function(){
-                  if(recLex){recLex=null;}
+                  clearInterval(compteur);
+                  var textCapte=bm.textContent.replace('🟢 ','').replace(' — clic stop','').trim();
+                  recLex=null;
                   bm.textContent='🎤 Me lire';
                   bm.style.background='#fcebeb';
                   bm.style.color='#a32d2d';
+                  // Afficher le feedback
+                  if(textCapte && textCapte.length>2 && textCapte!='⏹ Cliquez ici pour arrêter'){
+                    fd.innerHTML=
+                      '<div style="color:#5f5e5a;margin-bottom:.35rem"><strong>Vous avez dit :</strong></div>'+
+                      '<div style="color:#1c1c1c;font-style:italic;margin-bottom:.5rem">'+textCapte+'</div>'+
+                      '<div style="color:#5f5e5a;margin-bottom:.35rem"><strong>Exemple original :</strong></div>'+
+                      '<div style="color:#085041;margin-bottom:.5rem">'+ex+'</div>'+
+                      '<button class="abtn" style="background:#e6f1fb;color:#0c447c;border-color:#378add" onclick="speak(''+ex.replace(/'/g,"\'")+"','fr-FR')"+'">'+'🔊 Réécouter l'exemple</button>'+
+                      ' <button class="abtn" style="background:#e1f5ee;color:#085041;border-color:#1d9e75" onclick="speak(''+textCapte.replace(/'/g,"\'")+"','fr-FR')"+'">'+'🔊 Entendre ma phrase</button>';
+                    fd.style.display='block';
+                  }
                 };
                 try{recLex.start();}catch(e){
                   bm.textContent='🎤 Me lire';
@@ -1344,14 +1367,15 @@ function renderLexCards() {
                   bm.style.color='#a32d2d';
                   recLex=null;
                 }
-                // Arrêt auto 10s
-                setTimeout(function(){if(recLex){try{recLex.stop();}catch(e){}}},10000);
+                // Arrêt auto 30s
+                setTimeout(function(){if(recLex){try{recLex.stop();}catch(e){}}},30000);
               },600);
             };
             synth.speak(u);
           };
-        })(item.ex, btnMic);
+        })(item.ex, btnMic, feedbackDiv);
         card.appendChild(btnMic);
+        card.appendChild(feedbackDiv);
       }
     }
     grid.appendChild(card);
