@@ -341,13 +341,14 @@ footer{text-align:center;font-size:10px;color:#b4b2a9;margin-top:1rem;padding-to
 // MOT DE PASSE
 // ════════════════════════════════════
 var PWD = "M@rousse";
+var debloque = false; // Simulateur bloqué jusqu'à validation du mot de passe
 
 function verifierMdp() {
   var val = document.getElementById('pwd-input').value;
   if(val === PWD) {
+    debloque = true;
     document.getElementById('pwd-screen').style.display='none';
     document.getElementById('main-wrap').style.display='block';
-    // Démarrer le simulateur uniquement après authentification
     initMicro();
     renderPlanning();
     showQ();
@@ -929,7 +930,7 @@ function nettoyerTexte(txt) {
 }
 
 function speak(txt, code, cb) {
-  if(!synth||!txt) return;
+  if(!synth||!txt||!debloque) return;
   synth.cancel();
   var u = new SpeechSynthesisUtterance(nettoyerTexte(txt));
   u.lang = code||'fr-FR';
@@ -963,6 +964,7 @@ function addMsg(role, txt) {
 }
 
 function showQ() {
+  if(!debloque) return;
   var qs=getQs();
   if(qIdx>=qs.length){finir();return;}
   var q=qs[qIdx];
