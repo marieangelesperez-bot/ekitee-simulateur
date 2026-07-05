@@ -968,6 +968,7 @@ function addMsg(role, txt) {
 
 function showQ() {
   if(!debloque) return;
+  synth.cancel(); // Annuler toute synthèse en cours avant la nouvelle question
   var qs=getQs();
   if(qIdx>=qs.length){finir();return;}
   var q=qs[qIdx];
@@ -988,7 +989,7 @@ function showQ() {
   } else {
     addMsg('rh',q.q);
     setTimeout(function(){speak(q.q,'fr-FR');},150);
-    if(mode==='oral'||mode==='eco') setTimeout(function(){if(!isRec)startMic();},1800);
+    if(mode==='oral'||mode==='eco') setTimeout(function(){if(!isRec)startMic();},3000);
   }
 }
 
@@ -1025,14 +1026,21 @@ function valider() {
     else finir();
   };
   synth.cancel();
+  var dejaPasse=false; // Eviter double appel à nextQ
+  var avancer=function(){
+    if(dejaPasse) return;
+    dejaPasse=true;
+    // Délai plus long pour laisser l'apprenant lire le feedback
+    setTimeout(nextQ, 2000);
+  };
   var u=new SpeechSynthesisUtterance(nettoyerTexte(ev.msg));
   u.lang='fr-FR';
   u.rate=parseFloat(document.getElementById('sspeed').value)||0.85;
-  u.onend=function(){setTimeout(nextQ,500);};
-  u.onerror=function(){setTimeout(nextQ,500);};
+  u.onend=function(){avancer();};
+  u.onerror=function(){avancer();};
   synth.speak(u);
-  // Filet de sécurité — si synthèse bloque, on avance quand même
-  setTimeout(nextQ, 5000);
+  // Filet de sécurité — délai généreux de 8 secondes
+  setTimeout(avancer, 8000);
 }
 
 function finir() {
@@ -1281,30 +1289,66 @@ function renderLexCards() {
         btnMic.style.borderColor='#e24b4a';
         btnMic.textContent='🎤 Me lire';
         btnMic.onclick=(function(ex, bm){
+          var recLex=null;
           return function(){
-            if(!hasSTT){alert('Micro non disponible sur ce navigateur.');return;}
-            // Lire l'exemple puis activer le micro
-            speak(ex,'fr-FR');
+            if(!hasSTT){alert('Micro non disponible.');return;}
+            // Si déjà en écoute — arrêter
+            if(recLex){
+              try{recLex.stop();}catch(e){}
+              recLex=null;
+              bm.textContent='🎤 Me lire';
+              bm.style.background='#fcebeb';
+              bm.style.color='#a32d2d';
+              return;
+            }
+            // Lire l'exemple
             bm.textContent='⏳ Écoute...';
             bm.style.background='#faeeda';
             bm.style.color='#854f0b';
-            // Attendre fin de la synthèse vocale + 1 seconde
-            var dureeEstimee = Math.max(2000, ex.length * 80);
-            setTimeout(function(){
-              bm.textContent='🎤 Parlez maintenant';
-              bm.style.background='#e24b4a';
-              bm.style.color='#fff';
-              // Utiliser startMic() — déjà testé et fonctionnel
-              if(isRec) stopMic();
-              startMic();
-              // Arrêt automatique après 6 secondes
+            synth.cancel();
+            var u=new SpeechSynthesisUtterance(nettoyerTexte(ex));
+            u.lang='fr-FR'; u.rate=0.85;
+            u.onend=function(){
               setTimeout(function(){
-                stopMic();
-                bm.textContent='🎤 Me lire';
-                bm.style.background='#fcebeb';
-                bm.style.color='#a32d2d';
-              }, 6000);
-            }, dureeEstimee);
+                bm.textContent='🎤 Parlez — clic pour arrêter';
+                bm.style.background='#e24b4a';
+                bm.style.color='#fff';
+                // Instance dédiée lexique
+                var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+                recLex=new SR();
+                recLex.lang='fr-FR';
+                recLex.interimResults=true;
+                recLex.continuous=true;
+                recLex.onresult=function(e){
+                  var txt='';
+                  for(var i=0;i<e.results.length;i++) txt+=e.results[i][0].transcript;
+                  bm.textContent='🟢 '+txt.substring(0,25)+(txt.length>25?'...':'')+' — clic stop';
+                };
+                recLex.onerror=function(ev){
+                  if(ev.error!=='aborted'){
+                    bm.textContent='❌ '+ev.error+' — réessayez';
+                    bm.style.background='#fcebeb';
+                    bm.style.color='#a32d2d';
+                  }
+                  recLex=null;
+                };
+                recLex.onend=function(){
+                  if(recLex){recLex=null;}
+                  bm.textContent='🎤 Me lire';
+                  bm.style.background='#fcebeb';
+                  bm.style.color='#a32d2d';
+                };
+                try{recLex.start();}catch(e){
+                  bm.textContent='🎤 Me lire';
+                  bm.style.background='#fcebeb';
+                  bm.style.color='#a32d2d';
+                  recLex=null;
+                }
+                // Arrêt auto 10s
+                setTimeout(function(){if(recLex){try{recLex.stop();}catch(e){}}},10000);
+              },600);
+            };
+            synth.speak(u);
           };
         })(item.ex, btnMic);
         card.appendChild(btnMic);
