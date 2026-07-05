@@ -1359,7 +1359,7 @@ function renderLexCards() {
                     var t2=document.createElement('div');t2.style.cssText='color:#1c1c1c;font-style:italic;margin-bottom:.5rem';t2.textContent=dernierTexte;
                     var t3=document.createElement('div');t3.style.cssText='color:#5f5e5a;margin-bottom:.35rem;font-weight:700';t3.textContent='Exemple original :';
                     var t4=document.createElement('div');t4.style.cssText='color:#085041;margin-bottom:.5rem';t4.textContent=ex;
-                    var b1=document.createElement('button');b1.className='abtn';b1.style.cssText='background:#e6f1fb;color:#0c447c;border-color:#378add;margin-right:4px';b1.textContent='🔊 Réécouter l'exemple';
+                    var b1=document.createElement('button');b1.className='abtn';b1.style.cssText='background:#e6f1fb;color:#0c447c;border-color:#378add;margin-right:4px';b1.textContent="🔊 Réécouter l'exemple";
                     b1.onclick=(function(e){return function(){speak(e,'fr-FR');};})(ex);
                     var b2=document.createElement('button');b2.className='abtn';b2.style.cssText='background:#e1f5ee;color:#085041;border-color:#1d9e75';b2.textContent='🔊 Entendre ma phrase';
                     b2.onclick=(function(t){return function(){speak(t,'fr-FR');};})(dernierTexte);
