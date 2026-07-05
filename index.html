@@ -824,6 +824,10 @@ function demarrer() {
     if(!hist[i].prenom||hist[i].prenom==='Anonyme') hist[i].prenom=prenom;
   }
   try{localStorage.setItem('ek_hist',JSON.stringify(hist));}catch(e){}
+  // Si le simulateur est à zéro (après déconnexion), relancer la première question
+  if(qIdx===0 && score===0) {
+    showQ();
+  }
 }
 
 function changerProfil() {
@@ -859,8 +863,7 @@ function deconnecter() {
   document.getElementById('pscore').textContent='0/12';
   // Afficher la modale pour le prochain apprenant
   document.getElementById('overlay').style.display='flex';
-  // Démarrer le simulateur en arrière-plan
-  showQ();
+  // Ne pas démarrer le simulateur — il démarrera quand le prochain apprenant validera son profil
 }
 
 // ════════════════════════════════════
@@ -1279,62 +1282,29 @@ function renderLexCards() {
         btnMic.textContent='🎤 Me lire';
         btnMic.onclick=(function(ex, bm){
           return function(){
-            // Si déjà en mode répétition — arrêter
-            if(bm.getAttribute('data-recording')==='1'){
-              if(recognition){try{recognition.stop();}catch(e){}}
-              bm.setAttribute('data-recording','0');
-              bm.textContent='🎤 Me lire';
-              bm.style.background='#fcebeb';
-              bm.style.color='#a32d2d';
-              return;
-            }
-            // Lire l'exemple d'abord
-            synth.cancel();
-            var u=new SpeechSynthesisUtterance(nettoyerTexte(ex));
-            u.lang='fr-FR';
-            u.rate=0.85;
-            u.onend=function(){
-              // Délai pour laisser le navigateur libérer l'audio
+            if(!hasSTT){alert('Micro non disponible sur ce navigateur.');return;}
+            // Lire l'exemple puis activer le micro
+            speak(ex,'fr-FR');
+            bm.textContent='⏳ Écoute...';
+            bm.style.background='#faeeda';
+            bm.style.color='#854f0b';
+            // Attendre fin de la synthèse vocale + 1 seconde
+            var dureeEstimee = Math.max(2000, ex.length * 80);
+            setTimeout(function(){
+              bm.textContent='🎤 Parlez maintenant';
+              bm.style.background='#e24b4a';
+              bm.style.color='#fff';
+              // Utiliser startMic() — déjà testé et fonctionnel
+              if(isRec) stopMic();
+              startMic();
+              // Arrêt automatique après 6 secondes
               setTimeout(function(){
-                bm.textContent='🎤 Répétez — cliquez pour arrêter';
-                bm.style.background='#e24b4a';
-                bm.style.color='#fff';
-                bm.setAttribute('data-recording','1');
-                // Créer une reconnaissance dédiée pour le lexique
-                if(!hasSTT) return;
-                var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-                var rl=new SR();
-                rl.lang='fr-FR';
-                rl.interimResults=true;
-                rl.continuous=false;
-                rl.onresult=function(e){
-                  var txt='';
-                  for(var i=e.resultIndex;i<e.results.length;i++){
-                    txt+=e.results[i][0].transcript;
-                  }
-                  // Afficher ce que l'apprenant a dit
-                  bm.textContent='✅ '+txt.substring(0,30)+(txt.length>30?'...':'');
-                };
-                rl.onend=function(){
-                  setTimeout(function(){
-                    bm.setAttribute('data-recording','0');
-                    bm.textContent='🎤 Me lire';
-                    bm.style.background='#fcebeb';
-                    bm.style.color='#a32d2d';
-                  },2000);
-                };
-                rl.onerror=function(){
-                  bm.setAttribute('data-recording','0');
-                  bm.textContent='🎤 Me lire';
-                  bm.style.background='#fcebeb';
-                  bm.style.color='#a32d2d';
-                };
-                try{rl.start();}catch(e){console.warn(e);}
-                // Arrêt automatique après 8 secondes
-                setTimeout(function(){try{rl.stop();}catch(e){}},8000);
-              },500);
-            };
-            synth.speak(u);
+                stopMic();
+                bm.textContent='🎤 Me lire';
+                bm.style.background='#fcebeb';
+                bm.style.color='#a32d2d';
+              }, 6000);
+            }, dureeEstimee);
           };
         })(item.ex, btnMic);
         card.appendChild(btnMic);
