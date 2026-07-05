@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur d'entretien EKITEE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f3ef;color:#1c1c1c;padding:.75rem;font-size:14px}
+.wrap{max-width:640px;margin:0 auto}
+.hdr{background:#085041;border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem}
+.hdr h1{font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
+.hdr p{font-size:12px;color:#7bc8a0;font-style:italic}
+/* MODALE */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;max-width:400px;width:100%}
+.modal h2{font-size:17px;font-weight:700;color:#085041;margin-bottom:.25rem}
+.modal p{font-size:12px;color:#5f5e5a;margin-bottom:1rem}
+.modal label{font-size:11px;color:#5f5e5a;display:block;margin-bottom:.3rem;margin-top:.6rem}
+.modal input,.modal select{width:100%;border:1px solid #ccc;border-radius:6px;padding:.5rem .65rem;font-size:14px;font-family:Arial,sans-serif;margin-bottom:.25rem}
+.modal .btn-start{width:100%;padding:.65rem;background:#085041;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-top:.75rem}
+.modal .note{font-size:10px;color:#b4b2a9;margin-top:.5rem;text-align:center}
+/* BARRE PROFIL */
+.profil-bar{background:#085041;border-radius:7px;padding:.4rem .75rem;margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between}
+.profil-bar span{font-size:12px;color:#fff}
+.profil-bar button{font-size:10px;padding:2px 8px;border-radius:99px;background:#e1f5ee;color:#085041;border:none;cursor:pointer}
+/* TABS */
+.tabs{display:flex;gap:3px;background:#fff;border:1px solid #ccc;border-radius:8px;padding:3px;margin-bottom:.75rem}
+.tab{flex:1;padding:.4rem .25rem;font-size:11px;font-weight:600;border:none;border-radius:5px;cursor:pointer;background:none;color:#5f5e5a}
+.tab.on{background:#085041;color:#fff}
+.panel{display:none}.panel.on{display:block}
+/* CONFIG */
+.cfg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.5rem}
+.cfg label{font-size:10px;color:#5f5e5a;display:block;margin-bottom:2px}
+select{width:100%;border:1px solid #ccc;border-radius:5px;padding:.35rem .5rem;font-size:12px;font-family:Arial,sans-serif;background:#fff}
+/* LANG PILLS */
+.lpills{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:.5rem}
+.lp{font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid #ccc;background:#f4f3ef;color:#5f5e5a;cursor:pointer}
+.lp.on{background:#085041;color:#fff;border-color:#085041}
+/* MODES */
+.modes{display:flex;gap:4px;margin-bottom:.5rem;flex-wrap:wrap}
+.mb{flex:1;min-width:70px;padding:.35rem .25rem;font-size:11px;font-weight:600;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#f4f3ef;color:#5f5e5a;text-align:center}
+.mb.on{background:#e1f5ee;color:#085041;border-color:#1d9e75}
+.mb.ton{background:#faeeda;color:#854f0b;border-color:#ba7517}
+/* COMPAT */
+.compat{display:none;background:#faeeda;border:1px solid #ba7517;border-radius:7px;padding:.5rem .75rem;font-size:12px;color:#854f0b;margin-bottom:.5rem}
+.compat.on{display:block}
+/* MIC SELECT */
+.mic-row{display:none;align-items:center;gap:6px;margin-bottom:.5rem;flex-wrap:wrap}
+.mic-row label{font-size:10px;color:#5f5e5a}
+/* PROGRESS */
+.prog{background:#fff;border:1px solid #ccc;border-radius:7px;padding:.4rem .65rem;margin-bottom:.5rem;display:flex;align-items:center;gap:8px}
+.prog span{font-size:11px;color:#5f5e5a;white-space:nowrap}
+.pbar{flex:1;height:4px;background:#ccc;border-radius:2px}
+.pf{height:100%;background:#1d9e75;border-radius:2px;transition:width .3s}
+.btn-re{font-size:10px;padding:2px 8px;border-radius:99px;background:#e6f1fb;color:#0c447c;border:1px solid #378add;cursor:pointer}
+/* TÉLÉPHONE */
+.tel{display:none;background:#1a1a2e;border-radius:18px;padding:1rem;margin-bottom:.5rem;border:3px solid #333}
+.tel.on{display:block}
+.tel-sc{background:#0d1117;border-radius:12px;padding:1rem;margin-bottom:.75rem;text-align:center}
+.tel-cl{font-size:11px;color:#8b949e;margin-bottom:3px}
+.tel-nm{font-size:17px;font-weight:700;color:#f0f6fc;margin-bottom:.35rem}
+.tel-st{font-size:11px;color:#3fb950;margin-bottom:.35rem}
+.tel-wv{display:flex;align-items:center;justify-content:center;gap:3px;height:24px}
+.tel-wv span{display:block;width:3px;background:#3fb950;border-radius:2px;animation:wv 1s ease-in-out infinite}
+.tel-wv span:nth-child(2){animation-delay:.1s}.tel-wv span:nth-child(3){animation-delay:.2s}
+.tel-wv span:nth-child(4){animation-delay:.3s}.tel-wv span:nth-child(5){animation-delay:.4s}
+.tel-wv.pause span{animation:none;height:3px}
+@keyframes wv{0%,100%{height:4px}50%{height:20px}}
+.tel-bt{display:flex;justify-content:center;gap:1.25rem}
+.tbt{width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:17px}
+.tbt.mic{background:#3fb950;color:#0d1117}
+.tbt.mic.rec{background:#ff4444;animation:pulse 1s infinite}
+.tbt.end{background:#ff4444;color:#fff}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+/* CHAT */
+.chat{background:#fff;border:1px solid #ccc;border-radius:10px;padding:.65rem;min-height:160px;max-height:260px;overflow-y:auto;margin-bottom:.5rem;display:flex;flex-direction:column;gap:7px}
+.msg{display:flex;gap:7px;align-items:flex-start}
+.msg.rh{flex-direction:row}.msg.ca{flex-direction:row-reverse}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.av.rh{background:#e6f1fb;color:#0c447c}.av.ca{background:#e1f5ee;color:#085041}
+.bub{max-width:78%;padding:.45rem .65rem;border-radius:9px;font-size:13px;line-height:1.55}
+.bub.rh{background:#f4f3ef;border:1px solid #ddd;border-top-left-radius:2px}
+.bub.ca{background:#e6f1fb;border:1px solid #c2d9f0;border-top-right-radius:2px}
+/* FEEDBACK */
+.fb{display:none;border:1px solid #ccc;border-radius:9px;padding:.55rem .75rem;margin-bottom:.5rem;font-size:12px}
+.fb.on{display:block}
+.fb-t{font-weight:700;margin-bottom:3px;font-size:13px}
+.fb.bon{border-color:#1d9e75;background:#e1f5ee}
+.fb.ok{border-color:#ba7517;background:#faeeda}
+.fb.non{border-color:#e24b4a;background:#fcebeb}
+/* CONSEIL */
+.cs{font-size:11px;color:#5f5e5a;font-style:italic;padding:.15rem 0 .4rem;display:block}
+/* ZONE RÉPONSE */
+.rz label{font-size:10px;color:#5f5e5a;display:flex;justify-content:space-between;margin-bottom:.25rem}
+.rd{background:#fff;border:1px solid #ccc;border-radius:7px;padding:.5rem .65rem;min-height:60px;font-size:13px;color:#1c1c1c;line-height:1.55;margin-bottom:.4rem;word-break:break-word;outline:none}
+.rd.li{border-color:#e24b4a;background:#fff8f8}
+.rd.ok{border-color:#1d9e75}
+.vrow{display:flex;gap:5px;flex-wrap:wrap}
+.bmic{padding:.45rem .85rem;border-radius:99px;font-size:12px;font-weight:600;border:1px solid #ccc;background:#f4f3ef;color:#5f5e5a;cursor:pointer}
+.bmic.on{border-color:#e24b4a;background:#fcebeb;color:#a32d2d}
+.bmic.rec{background:#e24b4a;color:#fff;animation:pulse 1s infinite}
+/* BOUTONS */
+.btn{padding:.42rem .85rem;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:Arial,sans-serif}
+.btn.p{background:#085041;color:#fff}
+.btn.s{background:#e6f1fb;color:#0c447c;border:1px solid #378add}
+.btn.r{background:#fcebeb;color:#a32d2d;border:1px solid #e24b4a}
+/* SCORE FIN */
+.sfin{display:none;background:#fff;border:1px solid #ccc;border-radius:10px;padding:.85rem;margin-top:.5rem}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:.65rem 0}
+.sc{background:#f4f3ef;border-radius:7px;padding:.55rem .7rem}
+.sc .l{font-size:10px;color:#5f5e5a;margin-bottom:2px}
+.sc .v{font-size:19px;font-weight:700}
+/* LEXIQUE */
+.lex-card{background:#fff;border:1px solid #ccc;border-radius:9px;padding:.7rem;margin-bottom:7px}
+.lex-fr{font-size:14px;font-weight:700;margin-bottom:2px}
+.lex-ctx{font-size:10px;color:#5f5e5a;margin-bottom:.35rem}
+.lex-tr{font-size:13px;color:#1a3a5c;padding:.3rem .5rem;background:#e6f1fb;border-radius:5px;margin-bottom:.3rem}
+.lex-ex{font-size:11px;color:#5f5e5a;font-style:italic;margin-bottom:.35rem}
+.abtn{font-size:10px;padding:2px 8px;border-radius:99px;background:#e1f5ee;color:#085041;border:1px solid #1d9e75;cursor:pointer;margin-right:4px}
+/* RAPPELS */
+.freq-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:.75rem}
+.fc{border:1px solid #ccc;border-radius:7px;padding:.55rem;cursor:pointer;text-align:center;background:#f4f3ef}
+.fc.on{border-color:#1d9e75;background:#e1f5ee}
+.fc .ft{font-size:12px;font-weight:600}
+.fc .fs{font-size:10px;color:#5f5e5a}
+.plan-row{display:flex;align-items:center;gap:7px;margin-bottom:.35rem}
+.dp{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;min-width:54px;text-align:center}
+.dp.on{background:#085041;color:#fff}
+.dp.off{background:#f4f3ef;color:#b4b2a9}
+/* PROGRESSION */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:.75rem}
+.stat{background:#fff;border:1px solid #ccc;border-radius:7px;padding:.55rem .6rem}
+.stat .sl{font-size:10px;color:#5f5e5a;margin-bottom:2px}
+.stat .sv{font-size:18px;font-weight:700}
+.hist-t{width:100%;font-size:12px;border-collapse:collapse}
+.hist-t th{text-align:left;padding:.3rem .4rem;color:#5f5e5a;font-weight:500;border-bottom:1px solid #eee;font-size:10px}
+.hist-t td{padding:.3rem .4rem;border-bottom:1px solid #f0f0f0;color:#5f5e5a}
+footer{text-align:center;font-size:10px;color:#b4b2a9;margin-top:1rem;padding-top:.75rem;border-top:1px solid #ddd}
+</style>
+</head>
+<body>
+
+<!-- ÉCRAN MOT DE PASSE -->
+<div id="pwd-screen" style="position:fixed;inset:0;background:#085041;z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:14px;padding:2rem;max-width:360px;width:100%;text-align:center">
+    <div style="font-size:32px;margin-bottom:.5rem">🎤</div>
+    <h2 style="font-size:18px;font-weight:700;color:#085041;margin-bottom:.25rem">Simulateur EKITEE</h2>
+    <p style="font-size:12px;color:#5f5e5a;margin-bottom:1.25rem">Accès réservé — entrez le mot de passe</p>
+    <input type="password" id="pwd-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')verifierMdp()" style="width:100%;border:1px solid #ccc;border-radius:6px;padding:.55rem .75rem;font-size:15px;text-align:center;margin-bottom:.75rem;font-family:Arial,sans-serif">
+    <div id="pwd-error" style="color:#e24b4a;font-size:12px;margin-bottom:.5rem;display:none">Mot de passe incorrect.</div>
+    <button id="pwd-btn" onclick="verifierMdp()" style="width:100%;padding:.65rem;background:#085041;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif">Accéder au simulateur ↗</button>
+  </div>
+</div>
+
+<div class="wrap" id="main-wrap" style="display:none">
+
+<!-- MODALE PROFIL -->
+<div class="overlay" id="overlay" style="display:none">
+  <div class="modal">
+    <h2>🏆 Séance terminée !</h2>
+    <p>Entrez votre prénom pour que vos résultats soient enregistrés à votre nom.</p>
+    <label>Votre prénom *</label>
+    <input type="text" id="inp-prenom" placeholder="Entrez votre prénom" maxlength="40" onkeydown="if(event.key==='Enter')demarrer()">
+    <label>Votre langue maternelle</label>
+    <select id="inp-langue">
+      <option value="fr">🇫🇷 Français</option>
+      <option value="ar">🇸🇦 Arabe</option>
+      <option value="ro">🇷🇴 Roumain</option>
+      <option value="pt">🇵🇹 Portugais</option>
+      <option value="tr">🇹🇷 Turc</option>
+      <option value="vi">🇻🇳 Vietnamien</option>
+      <option value="pl">🇵🇱 Polonais</option>
+      <option value="es">🇪🇸 Espagnol</option>
+      <option value="en">🇬🇧 Anglais</option>
+      <option value="de">🇩🇪 Allemand</option>
+      <option value="it">🇮🇹 Italien</option>
+      <option value="fa">🇦🇫 Dari / Persan</option>
+      <option value="uk">🇺🇦 Ukrainien</option>
+      <option value="wo">🇸🇳 Wolof</option>
+      <option value="hi">🇮🇳 Hindi</option>
+    </select>
+    <button class="btn-start" id="btn-start" onclick="demarrer()">Sauvegarder mes résultats ↗</button>
+    <button onclick="document.getElementById('overlay').style.display='none'" style="width:100%;padding:.4rem;background:none;border:none;color:#b4b2a9;cursor:pointer;font-size:12px;margin-top:.25rem">Continuer sans sauvegarder</button>
+    <p class="note">Optionnel — vous pouvez aussi continuer sans sauvegarder.</p>
+  </div>
+</div>
+
+<!-- BARRE PROFIL -->
+<div class="profil-bar" id="profil-bar" style="display:none">
+  <span id="profil-nom" style="font-size:12px;color:#fff;flex:1"></span>
+  <button onclick="changerProfil()" style="font-size:11px;padding:3px 8px;border-radius:99px;background:#e1f5ee;color:#085041;border:none;cursor:pointer;margin-right:4px">✏️ Modifier</button>
+  <button onclick="deconnecter()" style="font-size:11px;padding:3px 8px;border-radius:99px;background:#fcebeb;color:#a32d2d;border:none;cursor:pointer">⏻ Déconnexion</button>
+</div>
+
+<div class="hdr">
+  <h1>🎤 Simulateur d'entretien EKITEE</h1>
+  <p>Entraînement vocal — 15 langues — Mode téléphonique</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" id="tab-sim" onclick="switchTab('sim',this)">🎤 Simulateur</button>
+  <button class="tab" id="tab-lex" onclick="switchTab('lex',this)">🌍 Lexique</button>
+  <button class="tab" id="tab-rap" onclick="switchTab('rap',this)">🔔 Rappels</button>
+  <button class="tab" id="tab-pro" onclick="switchTab('pro',this)">📊 Progression</button>
+</div>
+
+<!-- SIMULATEUR -->
+<div class="panel on" id="panel-sim">
+  <div class="cfg">
+    <div><label>Niveau</label>
+      <select id="sniv"><option value="deb">Débutant</option><option value="int" selected>Intermédiaire</option><option value="av">Avancé</option></select></div>
+    <div><label>Type d'entretien</label>
+      <select id="stype"><option value="phys" selected>Physique</option><option value="tel">Téléphonique</option></select></div>
+    <div><label>Poste</label>
+      <select id="sposte"><option value="textile" selected>Textile EKITEE</option><option value="gen">Emploi général</option></select></div>
+    <div><label>Vitesse voix</label>
+      <select id="sspeed"><option value="0.7">Lente</option><option value="0.85" selected>Normale</option><option value="1.0">Rapide</option></select></div>
+  </div>
+  <div style="font-size:10px;color:#5f5e5a;margin-bottom:.35rem">Ma langue :</div>
+  <div class="lpills" id="lpills-sim"></div>
+  <div class="modes">
+    <button class="mb on" id="m-mix" onclick="setMode('mix',this)">📝 Oral+texte</button>
+    <button class="mb" id="m-oral" onclick="setMode('oral',this)">🎤 Oral seul</button>
+    <button class="mb" id="m-tel" onclick="setMode('tel',this)">📞 Téléphone</button>
+    <button class="mb" id="m-eco" onclick="setMode('eco',this)">👂 Écoute</button>
+  </div>
+  <div class="compat" id="compat"></div>
+  <div class="mic-row" id="mic-row">
+    <label>🎤 Micro :</label>
+    <select id="mic-sel" onchange="selMicId=this.value" style="max-width:200px;font-size:12px"></select>
+    <span id="mic-lvl" style="font-size:11px;color:#085041"></span>
+  </div>
+  <div class="prog">
+    <span id="plbl">Q 1/6</span>
+    <div class="pbar"><div class="pf" id="pf" style="width:16%"></div></div>
+    <span id="pscore">0/12</span>
+    <button class="btn-re" onclick="rejouer()">🔊</button>
+  </div>
+  <div class="tel" id="tel">
+    <div class="tel-sc">
+      <div class="tel-cl">Appel entrant</div>
+      <div class="tel-nm">EKITEE — Recrutement</div>
+      <div class="tel-st" id="tst">En communication…</div>
+      <div class="tel-wv" id="twv"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="tel-bt">
+      <button class="tbt mic" id="tmic" onclick="toggleMicTel()">🎤</button>
+      <button class="tbt end" onclick="finirAppel()">📵</button>
+    </div>
+  </div>
+  <div id="chat-wrap"><div class="chat" id="chat"></div></div>
+  <div class="fb" id="fb"><div class="fb-t" id="fbt"></div><div id="fbb"></div></div>
+  <span class="cs" id="cs"></span>
+  <div class="rz" id="rz">
+    <label><span>Votre réponse</span><span id="recst" style="color:#e24b4a;display:none">● Enreg…</span></label>
+    <div class="rd" id="rd" contenteditable="true"></div>
+    <div class="vrow">
+      <button class="bmic" id="bmic" onclick="toggleMic()">🎤 Parler</button>
+      <button class="btn p" onclick="valider()">Valider ↗</button>
+      <button class="btn s" onclick="effacer()">✕ Effacer</button>
+      <button class="btn r" onclick="aide()">❓ Aide</button>
+    </div>
+  </div>
+  <div class="sfin" id="sfin">
+    <strong style="font-size:14px">🏆 Entretien terminé</strong>
+    <div class="sg">
+      <div class="sc"><div class="l">Score</div><div class="v" id="fsc">0/12</div></div>
+      <div class="sc"><div class="l">Mention</div><div class="v" id="fme" style="font-size:13px">—</div></div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn p" onclick="restart()">↺ Recommencer</button>
+      <button class="btn s" onclick="ecouterBilan()">🔊 Bilan audio</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEXIQUE -->
+<div class="panel" id="panel-lex">
+  <p style="font-size:12px;color:#5f5e5a;margin-bottom:.6rem;background:#e1f5ee;border-radius:7px;padding:.5rem .75rem">🌍 Lexique complet FLE — 34 expressions — 15 langues avec audio</p>
+  <div style="font-size:10px;color:#5f5e5a;margin-bottom:.25rem">Domaine :</div>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.5rem" id="dom-pills"></div>
+  <div style="font-size:10px;color:#5f5e5a;margin-bottom:.25rem">Langue :</div>
+  <div class="lpills" id="lpills-lex"></div>
+  <div id="lex-grid"></div>
+</div>
+
+<!-- RAPPELS -->
+<div class="panel" id="panel-rap">
+  <div style="background:#fff;border:1px solid #ccc;border-radius:9px;padding:.85rem;margin-bottom:.65rem">
+    <div style="font-size:13px;font-weight:700;margin-bottom:.65rem">📅 Fréquence d'entraînement</div>
+    <div class="freq-grid">
+      <div class="fc on" id="fc3" onclick="setFreq(3,this)"><div class="ft">3× / semaine</div><div class="fs">Lun · Mer · Ven</div></div>
+      <div class="fc" id="fc5" onclick="setFreq(5,this)"><div class="ft">5× / semaine</div><div class="fs">Lun au Ven</div></div>
+      <div class="fc" id="fc7" onclick="setFreq(7,this)"><div class="ft">Quotidien</div><div class="fs">Tous les jours</div></div>
+    </div>
+    <p style="font-size:11px;color:#5f5e5a">10-15 min/jour est plus efficace qu'une longue session hebdomadaire.</p>
+  </div>
+  <div style="background:#fff;border:1px solid #ccc;border-radius:9px;padding:.85rem;margin-bottom:.65rem">
+    <div style="font-size:13px;font-weight:700;margin-bottom:.65rem">📅 Mon prochain entraînement</div>
+    <div id="prochain-wrap" style="background:#e1f5ee;border-radius:8px;padding:.75rem;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:#085041" id="prochain-jour">—</div>
+      <div style="font-size:12px;color:#5f5e5a;margin-top:3px" id="prochain-date">Choisissez une fréquence ci-dessus</div>
+    </div>
+    <p style="font-size:11px;color:#5f5e5a;margin-top:.5rem">💡 Revenez vous entraîner ce jour-là pour progresser régulièrement.</p>
+  </div>
+  <div style="background:#fff;border:1px solid #ccc;border-radius:9px;padding:.85rem">
+    <div style="font-size:13px;font-weight:700;margin-bottom:.65rem">📋 Planning semaine</div>
+    <div id="plan-wrap"></div>
+  </div>
+</div>
+
+<!-- PROGRESSION -->
+<div class="panel" id="panel-pro">
+  <div class="stat-grid">
+    <div class="stat"><div class="sl">Séances</div><div class="sv" id="stsea">0</div></div>
+    <div class="stat"><div class="sl">Meilleur</div><div class="sv" id="stbst">—</div></div>
+    <div class="stat"><div class="sl">Moyen</div><div class="sv" id="stmoy">—</div></div>
+    <div class="stat"><div class="sl">Évolution</div><div class="sv" id="stpro">—</div></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;flex-wrap:wrap;gap:4px">
+    <span style="font-size:13px;font-weight:700">Historique</span>
+    <div style="display:flex;gap:4px">
+      <button class="btn s" onclick="exporterResultats()" style="font-size:10px;padding:2px 8px">📧 Envoyer au formateur</button>
+      <button class="btn r" onclick="clearHist()" style="font-size:10px;padding:2px 8px">Effacer</button>
+    </div>
+  </div>
+  <div id="hist-wrap" style="background:#fff;border:1px solid #ccc;border-radius:9px;padding:.75rem;font-size:12px;color:#5f5e5a;text-align:center">
+    Aucune séance — commencez votre premier entraînement !
+  </div>
+</div>
+
+<footer>EKITEE — Simulateur d'entretien v2.0 — Juillet 2026
+<br><button onclick="resetProfil()" style="font-size:10px;background:none;border:none;color:#b4b2a9;cursor:pointer;text-decoration:underline;margin-top:4px">↺ Changer d'apprenant</button>
+</footer>
+</div>
+
+<script>
+
+// ════════════════════════════════════
+// MOT DE PASSE
+// ════════════════════════════════════
+var PWD = "M@rousse";
+
+function verifierMdp() {
+  var val = document.getElementById('pwd-input').value;
+  if(val === PWD) {
+    document.getElementById('pwd-screen').style.display='none';
+    document.getElementById('main-wrap').style.display='block';
+  } else {
+    document.getElementById('pwd-error').style.display='block';
+    document.getElementById('pwd-input').value='';
+    document.getElementById('pwd-input').focus();
+  }
+}
+
+// Boutons pwd attachés directement en HTML
+
+
+// ════════════════════════════════════
+// DONNÉES
+// ════════════════════════════════════
+var LANGS = {
+  fr:{n:'Français',f:'🇫🇷',d:'ltr',c:'fr-FR'},
+  ar:{n:'Arabe',f:'🇸🇦',d:'rtl',c:'ar-SA'},
+  ro:{n:'Roumain',f:'🇷🇴',d:'ltr',c:'ro-RO'},
+  pt:{n:'Portugais',f:'🇵🇹',d:'ltr',c:'pt-PT'},
+  tr:{n:'Turc',f:'🇹🇷',d:'ltr',c:'tr-TR'},
+  vi:{n:'Vietnamien',f:'🇻🇳',d:'ltr',c:'vi-VN'},
+  pl:{n:'Polonais',f:'🇵🇱',d:'ltr',c:'pl-PL'},
+  es:{n:'Espagnol',f:'🇪🇸',d:'ltr',c:'es-ES'},
+  en:{n:'Anglais',f:'🇬🇧',d:'ltr',c:'en-GB'},
+  de:{n:'Allemand',f:'🇩🇪',d:'ltr',c:'de-DE'},
+  it:{n:'Italien',f:'🇮🇹',d:'ltr',c:'it-IT'},
+  fa:{n:'Dari',f:'🇦🇫',d:'rtl',c:'fa-AF'},
+  uk:{n:'Ukrainien',f:'🇺🇦',d:'ltr',c:'uk-UA'},
+  wo:{n:'Wolof',f:'🇸🇳',d:'ltr',c:'fr-SN'},
+  hi:{n:'Hindi',f:'🇮🇳',d:'ltr',c:'hi-IN'}
+};
+
+var LEX_FULL = [
+
+
+{ d:"entretien", fr:"Bonjour, je m'appelle...", ctx:"Formule d'ouverture d'entretien",
+  ex:"Bonjour, je m'appelle Amira Benali. J'ai rendez-vous avec Madame Martin.",
+  t:{ ar:"مرحباً، اسمي...", ro:"Bună ziua, mă numesc...", pt:"Bom dia, chamo-me...", tr:"Merhaba, adım...",
+      vi:"Xin chào, tên tôi là...", pl:"Dzień dobry, nazywam się...", es:"Buenos días, me llamo...",
+      en:"Good morning, my name is...", de:"Guten Tag, ich heiße...", it:"Buongiorno, mi chiamo...",
+      fa:"سلام، اسمم... است", th:"สวัสดีครับ/ค่ะ ผม/ดิฉันชื่อ...", uk:"Доброго дня, мене звати...",
+      wo:"Mangi dem, tuddu naa...", hi:"नमस्ते, मेरा नाम... है", ja:"はじめまして、私の名前は...です" }},
+{ d:"entretien", fr:"Je suis très motivé(e) par ce poste", ctx:"Exprimer sa motivation",
+  ex:"Je suis très motivée car ce poste correspond à mon expérience en tri textile.",
+  t:{ ar:"أنا متحمس/ة جداً لهذا المنصب", ro:"Sunt foarte motivat(ă) pentru acest post",
+      pt:"Estou muito motivado/a para este cargo", tr:"Bu pozisyon için çok motiveyim",
+      vi:"Tôi rất có động lực với vị trí này", pl:"Jestem bardzo zmotywowany/a do tej pracy",
+      es:"Estoy muy motivado/a para este puesto", en:"I am very motivated for this position",
+      de:"Ich bin sehr motiviert für diese Stelle", it:"Sono molto motivato/a per questa posizione",
+      fa:"برای این شغل بسیار انگیزه دارم", th:"ฉันมีแรงบันดาลใจมากสำหรับตำแหน่งนี้",
+      uk:"Я дуже зацікавлений/а цією посадою", wo:"Dafa ma weex lool poostubii", hi:"मैं इस पद के लिए बहुत प्रेरित हूँ", ja:"この仕事にとても意欲的です" }},
+{ d:"entretien", fr:"Pouvez-vous répéter la question, s'il vous plaît ?", ctx:"Demander reformulation — A1 essentiel",
+  ex:"Pouvez-vous répéter la question ? Je voudrais bien comprendre avant de répondre.",
+  t:{ ar:"هل يمكنكم إعادة السؤال من فضلكم؟", ro:"Puteți repeta întrebarea, vă rog?",
+      pt:"Pode repetir a pergunta, por favor?", tr:"Soruyu tekrar edebilir misiniz?",
+      vi:"Bạn có thể nhắc lại câu hỏi không?", pl:"Czy może powtórzyć pytanie?",
+      es:"¿Puede repetir la pregunta, por favor?", en:"Could you repeat the question, please?",
+      de:"Könnten Sie die Frage bitte wiederholen?", it:"Potrebbe ripetere la domanda, per favore?",
+      fa:"لطفاً می‌توانید سؤال را تکرار کنید؟", th:"คุณช่วยพูดซ้ำได้ไหมครับ/ค่ะ?",
+      uk:"Чи не могли б ви повторити питання?", wo:"Mbëggël na ko wax ci kanam?", hi:"क्या आप प्रश्न दोहरा सकते हैं?", ja:"質問をもう一度繰り返してもらえますか？" }},
+{ d:"entretien", fr:"Mes principales qualités sont...", ctx:"Valoriser son profil",
+  ex:"Mes principales qualités sont la rigueur, l'adaptabilité et le sens du travail en équipe.",
+  t:{ ar:"أبرز صفاتي هي...", ro:"Calitățile mele principale sunt...",
+      pt:"As minhas principais qualidades são...", tr:"Başlıca özelliklerim şunlardır...",
+      vi:"Những phẩm chất chính của tôi là...", pl:"Moje główne zalety to...",
+      es:"Mis principales cualidades son...", en:"My main qualities are...",
+      de:"Meine wichtigsten Qualitäten sind...", it:"Le mie principali qualità sono...",
+      fa:"مهم‌ترین ویژگی‌های من عبارتند از...", th:"คุณสมบัติหลักของฉันคือ...",
+      uk:"Мої головні якості:", wo:"Jëfandikoo yi am naa...", hi:"मेरे मुख्य गुण हैं...", ja:"私の主な長所は..." }},
+{ d:"entretien", fr:"Je ne comprends pas ce mot — pouvez-vous expliquer ?", ctx:"Signaler incompréhension — clé A1",
+  ex:"Je ne comprends pas ce mot. Pouvez-vous l'expliquer autrement, avec un exemple ?",
+  t:{ ar:"لا أفهم هذه الكلمة — هل يمكنكم الشرح؟", ro:"Nu înțeleg acest cuvânt — puteți explica?",
+      pt:"Não percebo esta palavra — pode explicar?", tr:"Bu kelimeyi anlamıyorum — açıklar mısınız?",
+      vi:"Tôi không hiểu từ này — bạn có thể giải thích không?", pl:"Nie rozumiem tego słowa — może wyjaśnić?",
+      es:"No entiendo esta palabra — ¿puede explicar?", en:"I don't understand this word — can you explain?",
+      de:"Ich verstehe dieses Wort nicht — können Sie es erklären?", it:"Non capisco questa parola — può spiegare?",
+      fa:"این کلمه را نمی‌فهمم — می‌توانید توضیح دهید؟", th:"ฉันไม่เข้าใจคำนี้ — คุณอธิบายได้ไหม?",
+      uk:"Я не розумію це слово — можете пояснити?", wo:"Dëkk haul dégal bi — mën nga wax?", hi:"मैं यह शब्द नहीं समझता — क्या आप समझा सकते हैं?", ja:"この言葉がわかりません — 説明してもらえますか？" }},
+
+
+{ d:"atelier", fr:"Je dois trier ce lot selon le grade A/B/C/D", ctx:"Tri qualitatif REP TLC",
+  ex:"Je dois trier ce lot selon le grade — A pour la revente, D pour le recyclage fibre.",
+  t:{ ar:"يجب أن أصنّف هذه الدفعة حسب الدرجة", ro:"Trebuie să sortez lotul după grad",
+      pt:"Tenho de tricar este lote por grau", tr:"Bu partiyi A/B/C/D derecesine göre sınıflandırmalıyım",
+      vi:"Tôi cần phân loại lô này theo cấp A/B/C/D", pl:"Muszę posortować tę partię według klasy",
+      es:"Debo clasificar este lote según el grado", en:"I need to sort this batch by grade A/B/C/D",
+      de:"Ich muss diese Charge nach Klasse A/B/C/D sortieren", it:"Devo smistare questo lotto per grado A/B/C/D",
+      fa:"باید این دسته را بر اساس درجه مرتب کنم", th:"ฉันต้องจัดเรียงล็อตนี้ตามเกรด A/B/C/D",
+      uk:"Мені треба відсортувати цю партію за класом", wo:"Maye sortir lotuñu bii ci grade bi", hi:"मुझे इस बैच को ग्रेड A/B/C/D के अनुसार छाँटना है", ja:"このロットをグレードA/B/C/Dに仕分けする必要があります" }},
+{ d:"atelier", fr:"Cette matière est du coton / de la laine / de la soie", ctx:"Identification des fibres ISO 1007/2011",
+  ex:"Cette matière est du coton pur — je le vois sur l'étiquette : 100% CO.",
+  t:{ ar:"هذه المادة قطن / صوف / حرير", ro:"Materialul este bumbac / lână / mătase",
+      pt:"Este tecido é algodão / lã / seda", tr:"Bu malzeme pamuk / yün / ipek",
+      vi:"Chất liệu này là bông / len / lụa", pl:"Materiał to bawełna / wełna / jedwab",
+      es:"Este tejido es algodón / lana / seda", en:"This material is cotton / wool / silk",
+      de:"Dieses Material ist Baumwolle / Wolle / Seide", it:"Questo materiale è cotone / lana / seta",
+      fa:"این ماده پنبه / پشم / ابریشم است", th:"วัสดุนี้คือผ้าฝ้าย / ขนสัตว์ / ผ้าไหม",
+      uk:"Цей матеріал — бавовна / вовна / шовк", wo:"Xaalis bii dafa jëm ak coton / layne / soie",
+      hi:"यह सामग्री कपास / ऊन / रेशम है", ja:"この素材は綿 / ウール / シルクです" }},
+{ d:"atelier", fr:"Je lis les symboles d'entretien sur l'étiquette", ctx:"Symboles ISO 3758:2023",
+  ex:"Je lis les symboles d'entretien — ce vêtement se lave à 30°C programme délicat.",
+  t:{ ar:"أقرأ رموز العناية على البطاقة", ro:"Citesc simbolurile de întreținere de pe etichetă",
+      pt:"Leio os símbolos de cuidado na etiqueta", tr:"Etiketteki bakım sembollerini okuyorum",
+      vi:"Tôi đọc biểu tượng hướng dẫn bảo quản trên nhãn", pl:"Czytam symbole pielęgnacji na etykiecie",
+      es:"Leo los símbolos de cuidado en la etiqueta", en:"I read the care symbols on the label",
+      de:"Ich lese die Pflegesymbole auf dem Etikett", it:"Leggo i simboli di cura sull'etichetta",
+      fa:"نمادهای نگهداری روی برچسب را می‌خوانم", th:"ฉันอ่านสัญลักษณ์การดูแลบนป้ายกำกับ",
+      uk:"Я читаю символи догляду на бирці", wo:"Xam xam yi am ci étiquette bi",
+      hi:"मैं लेबल पर देखभाल के प्रतीक पढ़ता/पढ़ती हूँ", ja:"ラベルのケアシンボルを読んでいます" }},
+{ d:"atelier", fr:"La machine ne fonctionne pas — je préviens", ctx:"Signaler un problème atelier",
+  ex:"La machine overlock ne fonctionne pas — je préviens le responsable immédiatement.",
+  t:{ ar:"الآلة لا تعمل — سأُبلغ المسؤول", ro:"Mașina nu funcționează — anunț responsabilul",
+      pt:"A máquina não funciona — vou avisar", tr:"Makine çalışmıyor — sorumluya haber veriyorum",
+      vi:"Máy không hoạt động — tôi sẽ báo cáo", pl:"Maszyna nie działa — informuję kierownika",
+      es:"La máquina no funciona — aviso al responsable", en:"The machine is broken — I am reporting it",
+      de:"Die Maschine funktioniert nicht — ich melde es", it:"La macchina non funziona — avviso il responsabile",
+      fa:"دستگاه کار نمی‌کند — خبر می‌دهم", th:"เครื่องจักรไม่ทำงาน — ฉันจะแจ้ง",
+      uk:"Машина не працює — я повідомлю", wo:"Masiin bi dafay tàng — dinaa wax",
+      hi:"मशीन काम नहीं कर रही — मैं सूचित करूँगा/करूँगी", ja:"機械が動いていません — 担当者に報告します" }},
+
+
+{ d:"vente", fr:"Votre commande a bien été reçue", ctx:"Confirmation commande Payhip",
+  ex:"Bonjour, votre commande a bien été reçue. Téléchargez votre fichier ici : [lien]",
+  t:{ ar:"تم استلام طلبكم بنجاح", ro:"Comanda dvs. a fost primită cu succes",
+      pt:"A sua encomenda foi recebida com sucesso", tr:"Siparişiniz başarıyla alındı",
+      vi:"Đơn hàng của bạn đã được nhận thành công", pl:"Zamówienie odebrane pomyślnie",
+      es:"Su pedido ha sido recibido correctamente", en:"Your order has been received successfully",
+      de:"Ihre Bestellung wurde erfolgreich erhalten", it:"Il Suo ordine è stato ricevuto con successo",
+      fa:"سفارش شما با موفقیت دریافت شد", th:"คำสั่งซื้อของคุณได้รับเรียบร้อยแล้ว",
+      uk:"Ваше замовлення успішно отримано", wo:"Commande bi dafa dem ak yaram",
+      hi:"आपका ऑर्डर सफलतापूर्वक प्राप्त हो गया है", ja:"ご注文を正常に受け付けました" }},
+{ d:"vente", fr:"Vous pouvez retourner l'article sous 14 jours", ctx:"Droit de rétractation légal",
+  ex:"Vous pouvez retourner l'article sous 14 jours sans justification — c'est votre droit légal.",
+  t:{ ar:"يمكنكم إعادة المنتج خلال 14 يوماً", ro:"Puteți returna articolul în 14 zile",
+      pt:"Pode devolver o artigo em 14 dias", tr:"Ürünü 14 gün içinde iade edebilirsiniz",
+      vi:"Bạn có thể trả lại sản phẩm trong 14 ngày", pl:"Możesz zwrócić artykuł w 14 dni",
+      es:"Puede devolver el artículo en 14 días", en:"You can return the item within 14 days",
+      de:"Sie können den Artikel innerhalb von 14 Tagen zurückgeben", it:"Può restituire l'articolo entro 14 giorni",
+      fa:"می‌توانید کالا را ظرف ۱۴ روز برگردانید", th:"คุณสามารถคืนสินค้าภายใน 14 วัน",
+      uk:"Ви можете повернути товар протягом 14 днів", wo:"Mën nga jël produii bi ci 14 bés",
+      hi:"आप 14 दिनों के भीतर वस्तु वापस कर सकते हैं", ja:"14日以内に商品を返品できます" }},
+{ d:"vente", fr:"Les frais de livraison sont inclus dans le prix", ctx:"Tarification transparente",
+  ex:"Les frais de livraison sont inclus dans le prix pour toute commande supérieure à 30 €.",
+  t:{ ar:"تكاليف الشحن مشمولة في السعر", ro:"Costurile de livrare sunt incluse în preț",
+      pt:"Os custos de envio estão incluídos no preço", tr:"Kargo ücretleri fiyata dahildir",
+      vi:"Chi phí vận chuyển đã bao gồm trong giá", pl:"Koszty wysyłki są wliczone w cenę",
+      es:"Los gastos de envío están incluidos en el precio", en:"Shipping costs are included in the price",
+      de:"Die Versandkosten sind im Preis inbegriffen", it:"Le spese di spedizione sono incluse nel prezzo",
+      fa:"هزینه ارسال در قیمت گنجانده شده است", th:"ค่าจัดส่งรวมอยู่ในราคาแล้ว",
+      uk:"Вартість доставки включена в ціну", wo:"Frais de livraison yi dafa xool ci prix bi",
+      hi:"शिपिंग खर्च कीमत में शामिल है", ja:"送料は価格に含まれています" }},
+
+
+{ d:"client", fr:"Comment puis-je vous aider ?", ctx:"Formule d'accueil universelle",
+  ex:"Bonjour, comment puis-je vous aider ? Vous avez une question sur votre commande ?",
+  t:{ ar:"كيف يمكنني مساعدتكم؟", ro:"Cum vă pot ajuta?",
+      pt:"Como posso ajudá-lo/a?", tr:"Size nasıl yardımcı olabilirim?",
+      vi:"Tôi có thể giúp gì cho bạn?", pl:"Jak mogę Panu/Pani pomóc?",
+      es:"¿En qué puedo ayudarle?", en:"How can I help you?",
+      de:"Wie kann ich Ihnen helfen?", it:"Come posso aiutarla?",
+      fa:"چطور می‌توانم کمک کنم؟", th:"ฉันจะช่วยคุณได้อย่างไร?",
+      uk:"Чим я можу вам допомогти?", wo:"Naka mën naa def ci yëgël bi?",
+      hi:"मैं आपकी कैसे मदद कर सकता/सकती हूँ?", ja:"何かお手伝いできますか？" }},
+{ d:"client", fr:"Je comprends votre problème — je vais trouver une solution", ctx:"Empathie et gestion de réclamation",
+  ex:"Je comprends votre problème — le colis n'est pas arrivé. Je contacte le transporteur.",
+  t:{ ar:"أتفهم مشكلتكم — سأجد حلاً", ro:"Înțeleg problema — voi găsi o soluție",
+      pt:"Compreendo o problema — vou encontrar solução", tr:"Sorununuzu anlıyorum — çözüm bulacağım",
+      vi:"Tôi hiểu vấn đề của bạn — tôi sẽ tìm giải pháp", pl:"Rozumiem problem — znajdę rozwiązanie",
+      es:"Entiendo su problema — voy a encontrar una solución", en:"I understand — I will find a solution",
+      de:"Ich verstehe Ihr Problem — ich werde eine Lösung finden", it:"Capisco il problema — troverò una soluzione",
+      fa:"مشکل شما را می‌فهمم — راه‌حلی پیدا می‌کنم", th:"ฉันเข้าใจปัญหาของคุณ — ฉันจะหาทางแก้ไข",
+      uk:"Я розумію вашу проблему — знайду рішення", wo:"Dëgg naa ci xelam bi — dinaa gëm solution",
+      hi:"मैं आपकी समस्या समझता/समझती हूँ — मैं समाधान खोजूँगा/खोजूँगी", ja:"ご状況は理解しています — 解決策を探します" }},
+
+
+{ d:"reunion", fr:"Pouvez-vous parler plus lentement ?", ctx:"Demande fondamentale A1 en réunion",
+  ex:"Pouvez-vous parler plus lentement, s'il vous plaît ? Je veux bien comprendre.",
+  t:{ ar:"هل يمكنكم التحدث بشكل أبطأ؟", ro:"Puteți vorbi mai rar, vă rog?",
+      pt:"Pode falar mais devagar, por favor?", tr:"Daha yavaş konuşabilir misiniz?",
+      vi:"Bạn có thể nói chậm hơn không?", pl:"Czy może Pan/Pani mówić wolniej?",
+      es:"¿Puede hablar más despacio, por favor?", en:"Could you speak more slowly, please?",
+      de:"Könnten Sie bitte langsamer sprechen?", it:"Potrebbe parlare più lentamente, per favore?",
+      fa:"لطفاً می‌توانید آهسته‌تر صحبت کنید؟", th:"คุณช่วยพูดช้าๆ ได้ไหมครับ/ค่ะ?",
+      uk:"Чи могли б ви говорити повільніше?", wo:"Mën nga wax sax sax?",
+      hi:"क्या आप धीरे बोल सकते हैं?", ja:"もう少しゆっくり話していただけますか？" }},
+{ d:"reunion", fr:"Je suis d'accord / Je ne suis pas d'accord", ctx:"Prendre position en réunion",
+  ex:"Je suis d'accord avec la proposition — commençons par les articles Grade A.",
+  t:{ ar:"أوافق / لا أوافق", ro:"Sunt de acord / Nu sunt de acord",
+      pt:"Concordo / Não concordo", tr:"Katılıyorum / Katılmıyorum",
+      vi:"Tôi đồng ý / Tôi không đồng ý", pl:"Zgadzam się / Nie zgadzam się",
+      es:"Estoy de acuerdo / No estoy de acuerdo", en:"I agree / I disagree",
+      de:"Ich bin einverstanden / Ich bin nicht einverstanden", it:"Sono d'accordo / Non sono d'accordo",
+      fa:"موافقم / مخالفم", th:"ฉันเห็นด้วย / ฉันไม่เห็นด้วย",
+      uk:"Я згоден/згодна / Я не згоден/не згодна", wo:"Mangi soxor / Mangi mujj",
+      hi:"मैं सहमत हूँ / मैं सहमत नहीं हूँ", ja:"同意します / 同意しません" }},
+
+
+{ d:"securite", fr:"Attention ! Il y a un danger", ctx:"Alerte urgente à l'atelier",
+  ex:"Attention ! Il y a un danger — une caisse est tombée près de la sortie.",
+  t:{ ar:"انتبه! هناك خطر", ro:"Atenție! Există un pericol",
+      pt:"Atenção! Há um perigo", tr:"Dikkat! Tehlike var",
+      vi:"Chú ý! Có nguy hiểm", pl:"Uwaga! Jest niebezpieczeństwo",
+      es:"¡Atención! Hay un peligro", en:"Attention! There is a danger",
+      de:"Achtung! Es gibt eine Gefahr", it:"Attenzione! C'è un pericolo",
+      fa:"توجه! خطری وجود دارد", th:"ระวัง! มีอันตราย",
+      uk:"Обережно! Є небезпека", wo:"Fatte ak! Dafa dëdd",
+      hi:"ध्यान दें! खतरा है", ja:"注意！危険があります" }},
+{ d:"securite", fr:"Je dois porter les équipements de protection", ctx:"EPI obligatoires ACI",
+  ex:"Je dois porter les gants et le masque pour le tri des articles de collecte.",
+  t:{ ar:"يجب أن أرتدي معدات الحماية", ro:"Trebuie să port echipamentele de protecție",
+      pt:"Devo usar os equipamentos de proteção", tr:"Koruyucu ekipmanları giymeliyim",
+      vi:"Tôi phải mang thiết bị bảo hộ", pl:"Muszę nosić środki ochrony osobistej",
+      es:"Debo usar los equipos de protección", en:"I must wear the protective equipment",
+      de:"Ich muss die Schutzausrüstung tragen", it:"Devo indossare i dispositivi di protezione",
+      fa:"باید تجهیزات محافظ بپوشم", th:"ฉันต้องสวมอุปกรณ์ป้องกัน",
+      uk:"Я повинен/повинна носити захисне спорядження", wo:"Waral naa enfiler équipements yi",
+      hi:"मुझे सुरक्षा उपकरण पहनने होंगे", ja:"保護具を着用しなければなりません" }},
+
+
+{ d:"numerique", fr:"Comment allumer / éteindre l'ordinateur ?", ctx:"Base numérique — PIX domaine 5",
+  ex:"Comment allumer l'ordinateur ? Je ne trouve pas le bouton marche/arrêt.",
+  t:{ ar:"كيف أشغّل / أوقف الحاسوب؟", ro:"Cum pornesc / opresc calculatorul?",
+      pt:"Como ligar / desligar o computador?", tr:"Bilgisayarı nasıl açarım / kapatırım?",
+      vi:"Làm thế nào để bật / tắt máy tính?", pl:"Jak włączyć / wyłączyć komputer?",
+      es:"¿Cómo encender / apagar el ordenador?", en:"How do I turn the computer on / off?",
+      de:"Wie schalte ich den Computer ein / aus?", it:"Come si accende / spegne il computer?",
+      fa:"چگونه کامپیوتر را روشن / خاموش کنم؟", th:"ฉันจะเปิด/ปิดคอมพิวเตอร์อย่างไร?",
+      uk:"Як увімкнути / вимкнути комп'ютер?", wo:"Naka mën naa allumer / éteindre ordinateur bi?",
+      hi:"कंप्यूटर कैसे चालू/बंद करें?", ja:"パソコンの電源を入れる/切る方法は？" }},
+{ d:"numerique", fr:"Comment envoyer un e-mail avec une pièce jointe ?", ctx:"Messagerie — PIX domaine 2",
+  ex:"Comment envoyer un e-mail avec une pièce jointe ? Je veux envoyer la fiche de traçabilité.",
+  t:{ ar:"كيف أرسل بريداً إلكترونياً بمرفق؟", ro:"Cum trimit un e-mail cu atașament?",
+      pt:"Como enviar um e-mail com anexo?", tr:"Ekli e-posta nasıl gönderirim?",
+      vi:"Làm thế nào để gửi email có tệp đính kèm?", pl:"Jak wysłać e-mail z załącznikiem?",
+      es:"¿Cómo enviar un correo con archivo adjunto?", en:"How do I send an email with an attachment?",
+      de:"Wie sende ich eine E-Mail mit Anhang?", it:"Come si invia un'e-mail con allegato?",
+      fa:"چطور ایمیل با پیوست بفرستم؟", th:"ฉันจะส่งอีเมลพร้อมไฟล์แนบได้อย่างไร?",
+      uk:"Як надіслати електронний лист із вкладенням?", wo:"Naka mën naa daan email ak fichier?",
+      hi:"अटैचमेंट के साथ ईमेल कैसे भेजें?", ja:"添付ファイル付きのメールを送る方法は？" }},
+{ d:"numerique", fr:"Je sauvegarde mon fichier sur Google Drive", ctx:"Stockage cloud — PIX domaine 3",
+  ex:"Je sauvegarde mon fichier sur Google Drive pour ne pas le perdre.",
+  t:{ ar:"أحفظ ملفي على Google Drive", ro:"Salvez fișierul pe Google Drive",
+      pt:"Guardo o meu ficheiro no Google Drive", tr:"Dosyamı Google Drive'a kaydediyorum",
+      vi:"Tôi lưu tệp lên Google Drive", pl:"Zapisuję plik na Google Drive",
+      es:"Guardo mi archivo en Google Drive", en:"I save my file on Google Drive",
+      de:"Ich speichere meine Datei auf Google Drive", it:"Salvo il mio file su Google Drive",
+      fa:"فایلم را در Google Drive ذخیره می‌کنم", th:"ฉันบันทึกไฟล์ของฉันใน Google Drive",
+      uk:"Я зберігаю файл на Google Drive", wo:"Dëgg naa sauvegarder fichier bi ci Google Drive",
+      hi:"मैं अपनी फ़ाइल Google Drive पर सहेजता/सहेजती हूँ", ja:"Google Driveにファイルを保存します" }},
+{ d:"numerique", fr:"Mon mot de passe est incorrect — comment le réinitialiser ?", ctx:"Sécurité numérique — PIX domaine 4",
+  ex:"Mon mot de passe est incorrect. Comment le réinitialiser sur Payhip ?",
+  t:{ ar:"كلمة المرور غير صحيحة — كيف أعيد تعيينها؟", ro:"Parola mea este greșită — cum o resetez?",
+      pt:"A minha senha está incorreta — como a repor?", tr:"Şifrem yanlış — nasıl sıfırlarım?",
+      vi:"Mật khẩu của tôi sai — làm thế nào để đặt lại?", pl:"Moje hasło jest nieprawidłowe — jak je zresetować?",
+      es:"Mi contraseña es incorrecta — ¿cómo la reseteo?", en:"My password is wrong — how do I reset it?",
+      de:"Mein Passwort ist falsch — wie setze ich es zurück?", it:"La mia password è sbagliata — come la reimposto?",
+      fa:"رمز عبورم نادرست است — چطور آن را بازنشانی کنم؟", th:"รหัสผ่านของฉันไม่ถูกต้อง — จะรีเซ็ตอย่างไร?",
+      uk:"Мій пароль неправильний — як його скинути?", wo:"Mot de passe bi dafay faw — naka mën naa ko reset?",
+      hi:"मेरा पासवर्ड गलत है — इसे कैसे रीसेट करें?", ja:"パスワードが違います — リセットする方法は？" }},
+
+
+{ d:"formation", fr:"Je prépare la certification PIX", ctx:"Préparation certification numérique officielle",
+  ex:"Je prépare la certification PIX sur pix.fr — je travaille les domaines 1 et 2.",
+  t:{ ar:"أتحضّر لشهادة PIX الرقمية", ro:"Mă pregătesc pentru certificarea PIX",
+      pt:"Estou a preparar a certificação PIX", tr:"PIX sertifikasına hazırlanıyorum",
+      vi:"Tôi đang chuẩn bị chứng chỉ PIX", pl:"Przygotowuję się do certyfikacji PIX",
+      es:"Me preparo para la certificación PIX", en:"I am preparing for the PIX certification",
+      de:"Ich bereite mich auf die PIX-Zertifizierung vor", it:"Mi sto preparando per la certificazione PIX",
+      fa:"دارم برای گواهینامه PIX آماده می‌شوم", th:"ฉันกำลังเตรียมตัวสำหรับใบรับรอง PIX",
+      uk:"Я готуюся до сертифікації PIX", wo:"Daje naa ci certification PIX",
+      hi:"मैं PIX प्रमाणन की तैयारी कर रहा/रही हूँ", ja:"PIX認定の準備をしています" }},
+{ d:"formation", fr:"Je travaille sur mon portfolio d'apprentissage", ctx:"Suivi de progression — dossier ACI",
+  ex:"Je travaille sur mon portfolio — j'y ajoute mes fiches de traçabilité et mes CV.",
+  t:{ ar:"أعمل على ملفي التعليمي", ro:"Lucrez la portofoliul meu de învățare",
+      pt:"Estou a trabalhar no meu portfólio de aprendizagem", tr:"Öğrenme portfolyom üzerinde çalışıyorum",
+      vi:"Tôi đang làm hồ sơ học tập của mình", pl:"Pracuję nad moim portfolio nauki",
+      es:"Estoy trabajando en mi portfolio de aprendizaje", en:"I am working on my learning portfolio",
+      de:"Ich arbeite an meinem Lernportfolio", it:"Sto lavorando al mio portfolio di apprendimento",
+      fa:"دارم روی پوشه یادگیری‌ام کار می‌کنم", th:"ฉันกำลังทำแฟ้มสะสมผลงาน",
+      uk:"Я працюю над своїм навчальним портфоліо", wo:"Daje naa ci portfolio bi",
+      hi:"मैं अपने सीखने के पोर्टफोलियो पर काम कर रहा/रही हूँ", ja:"学習ポートフォリオに取り組んでいます" }},
+{ d:"formation", fr:"J'ai obtenu mon attestation de formation", ctx:"Valider et célébrer une réussite",
+  ex:"J'ai obtenu mon attestation de formation FLE — je suis fier/fière de mes progrès.",
+  t:{ ar:"حصلت على شهادة التدريب", ro:"Am obținut atestatul de formare",
+      pt:"Obtive o meu certificado de formação", tr:"Eğitim belgemi aldım",
+      vi:"Tôi đã nhận được chứng chỉ đào tạo", pl:"Uzyskałem/am zaświadczenie o szkoleniu",
+      es:"He obtenido mi certificado de formación", en:"I have obtained my training certificate",
+      de:"Ich habe mein Ausbildungszertifikat erhalten", it:"Ho ottenuto il mio attestato di formazione",
+      fa:"گواهینامه آموزشی‌ام را دریافت کردم", th:"ฉันได้รับใบรับรองการฝึกอบรมแล้ว",
+      uk:"Я отримав/отримала свідоцтво про навчання", wo:"Am naa attestation formation bi",
+      hi:"मुझे अपना प्रशिक्षण प्रमाण पत्र मिल गया है", ja:"研修証明書を取得しました" }},
+{ d:"formation", fr:"Quel est l'objectif de cette formation ?", ctx:"Comprendre le programme — A1/A2",
+  ex:"Quel est l'objectif de cette formation ? Je veux savoir ce que je vais apprendre.",
+  t:{ ar:"ما هو هدف هذه التدريب؟", ro:"Care este obiectivul acestei formări?",
+      pt:"Qual é o objetivo desta formação?", tr:"Bu eğitimin amacı nedir?",
+      vi:"Mục tiêu của khóa học này là gì?", pl:"Jaki jest cel tego szkolenia?",
+      es:"¿Cuál es el objetivo de esta formación?", en:"What is the objective of this training?",
+      de:"Was ist das Ziel dieser Ausbildung?", it:"Qual è l'obiettivo di questa formazione?",
+      fa:"هدف این آموزش چیست؟", th:"จุดประสงค์ของการฝึกอบรมนี้คืออะไร?",
+      uk:"Яка мета цього навчання?", wo:"Ana xëy formation bii?",
+      hi:"इस प्रशिक्षण का उद्देश्य क्या है?", ja:"この研修の目的は何ですか？" }},
+
+
+{ d:"dpp", fr:"Qu'est-ce que le Passeport Numérique du Produit ?", ctx:"DPP — ESPR 2027 vulgarisé",
+  ex:"Le DPP est une carte d'identité numérique pour chaque produit textile — obligatoire dès 2027.",
+  t:{ ar:"ما هو جواز السفر الرقمي للمنتج؟", ro:"Ce este Pașaportul Digital al Produsului?",
+      pt:"O que é o Passaporte Digital do Produto?", tr:"Dijital Ürün Pasaportu nedir?",
+      vi:"Hộ chiếu kỹ thuật số sản phẩm là gì?", pl:"Co to jest Cyfrowy Paszport Produktu?",
+      es:"¿Qué es el Pasaporte Digital del Producto?", en:"What is the Digital Product Passport?",
+      de:"Was ist der digitale Produktpass?", it:"Cos'è il Passaporto Digitale del Prodotto?",
+      fa:"گذرنامه دیجیتال محصول چیست؟", th:"หนังสือเดินทางดิจิทัลของผลิตภัณฑ์คืออะไร?",
+      uk:"Що таке цифровий паспорт продукту?", wo:"Ana DPP — Passeport Numérique bi?",
+      hi:"डिजिटल उत्पाद पासपोर्ट क्या है?", ja:"デジタル製品パスポートとは何ですか？" }},
+{ d:"dpp", fr:"Ce produit contient des fibres recyclées", ctx:"Étiquetage Green Claims — allégation vérifiable",
+  ex:"Ce produit contient 60% de fibres recyclées post-consommation — origine traçable sur Refashion.",
+  t:{ ar:"هذا المنتج يحتوي على ألياف معادة التدوير", ro:"Acest produs conține fibre reciclate",
+      pt:"Este produto contém fibras recicladas", tr:"Bu ürün geri dönüştürülmüş elyaf içeriyor",
+      vi:"Sản phẩm này chứa sợi tái chế", pl:"Ten produkt zawiera włókna z recyklingu",
+      es:"Este producto contiene fibras recicladas", en:"This product contains recycled fibres",
+      de:"Dieses Produkt enthält recycelte Fasern", it:"Questo prodotto contiene fibre riciclate",
+      fa:"این محصول حاوی الیاف بازیافتی است", th:"ผลิตภัณฑ์นี้มีเส้นใยรีไซเคิล",
+      uk:"Цей продукт містить перероблені волокна", wo:"Produii bii am na fibre recyclée",
+      hi:"इस उत्पाद में पुनर्नवीनीकरण फाइबर हैं", ja:"この製品にはリサイクル繊維が含まれています" }},
+{ d:"dpp", fr:"Scannez le QR code pour voir les informations du produit", ctx:"Interface DPP consommateur",
+  ex:"Scannez le QR code pour voir la composition, l'entretien et la filière de recyclage de cet article.",
+  t:{ ar:"امسح رمز QR لرؤية معلومات المنتج", ro:"Scanați codul QR pentru informații despre produs",
+      pt:"Leia o QR code para ver as informações do produto", tr:"Ürün bilgilerini görmek için QR kodu tarayın",
+      vi:"Quét mã QR để xem thông tin sản phẩm", pl:"Zeskanuj kod QR, aby zobaczyć informacje o produkcie",
+      es:"Escanee el código QR para ver la información del producto", en:"Scan the QR code to see the product information",
+      de:"Scannen Sie den QR-Code für Produktinformationen", it:"Scansioni il codice QR per le informazioni sul prodotto",
+      fa:"برای مشاهده اطلاعات محصول QR را اسکن کنید", th:"สแกนคิวอาร์โค้ดเพื่อดูข้อมูลผลิตภัณฑ์",
+      uk:"Відскануйте QR-код для перегляду інформації про товар", wo:"Scan QR code bi pour xam xam ci produii bi",
+      hi:"उत्पाद जानकारी देखने के लिए QR कोड स्कैन करें", ja:"製品情報を見るためにQRコードをスキャンしてください" }},
+
+
+{ d:"etudes", fr:"Je voudrais reprendre mes études", ctx:"Exprimer un projet de formation",
+  ex:"Je voudrais reprendre mes études pour obtenir un CAP Métiers de la Mode.",
+  t:{ ar:"أودّ استئناف دراستي", ro:"Aș dori să îmi reiau studiile",
+      pt:"Gostaria de retomar os meus estudos", tr:"Öğrenimime devam etmek istiyorum",
+      vi:"Tôi muốn tiếp tục học", pl:"Chciałbym/Chciałabym wznowić naukę",
+      es:"Me gustaría retomar mis estudios", en:"I would like to go back to studying",
+      de:"Ich möchte mein Studium wieder aufnehmen", it:"Vorrei riprendere gli studi",
+      fa:"می‌خواهم تحصیلم را از سر بگیرم", th:"ฉันอยากกลับไปเรียนต่อ",
+      uk:"Я хотів/хотіла б продовжити навчання", wo:"Bëgg naa des ci école bi",
+      hi:"मैं अपनी पढ़ाई फिर से शुरू करना चाहता/चाहती हूँ", ja:"また勉強を再開したいです" }},
+{ d:"etudes", fr:"J'ai besoin d'aide pour réviser les mathématiques", ctx:"Soutien scolaire niveau collège/lycée",
+  ex:"J'ai besoin d'aide pour réviser les mathématiques — les pourcentages et les fractions.",
+  t:{ ar:"أحتاج إلى مساعدة في مراجعة الرياضيات", ro:"Am nevoie de ajutor pentru a revizui matematica",
+      pt:"Preciso de ajuda para rever a matemática", tr:"Matematik tekrarı için yardıma ihtiyacım var",
+      vi:"Tôi cần giúp đỡ để ôn tập toán học", pl:"Potrzebuję pomocy w powtarzaniu matematyki",
+      es:"Necesito ayuda para repasar las matemáticas", en:"I need help to revise mathematics",
+      de:"Ich brauche Hilfe beim Wiederholen von Mathematik", it:"Ho bisogno di aiuto per ripassare matematica",
+      fa:"برای مرور ریاضیات به کمک نیاز دارم", th:"ฉันต้องการความช่วยเหลือในการทบทวนวิชาคณิตศาสตร์",
+      uk:"Мені потрібна допомога з повторенням математики", wo:"Bëgg naa ndimbal ci math yi",
+      hi:"मुझे गणित की पुनरावृत्ति में मदद चाहिए", ja:"数学の復習に助けが必要です" }},
+{ d:"etudes", fr:"Quelles sont les démarches pour valider mon expérience (VAE) ?", ctx:"Validation des Acquis — CPF éligible",
+  ex:"J'ai 5 ans d'expérience en couture — quelles sont les démarches pour valider avec une VAE ?",
+  t:{ ar:"ما هي إجراءات تقييم تجربتي المهنية؟", ro:"Care sunt demersurile pentru a valida experiența mea?",
+      pt:"Quais são os passos para validar a minha experiência profissional?", tr:"Deneyimimi doğrulamak için adımlar nelerdir?",
+      vi:"Các bước để xác nhận kinh nghiệm nghề nghiệp là gì?", pl:"Jakie są kroki do walidacji mojego doświadczenia?",
+      es:"¿Cuáles son los pasos para validar mi experiencia profesional?", en:"What are the steps to validate my professional experience?",
+      de:"Was sind die Schritte zur Anerkennung meiner Berufserfahrung?", it:"Quali sono i passi per validare la mia esperienza professionale?",
+      fa:"مراحل تأیید تجربه حرفه‌ای‌ام چیست؟", th:"ขั้นตอนในการรับรองประสบการณ์วิชาชีพของฉันคืออะไร?",
+      uk:"Які кроки для підтвердження мого досвіду роботи?", wo:"Ana yëgël yu waroon naa dox ci VAE bi?",
+      hi:"मेरे व्यावसायिक अनुभव को मान्य करने के लिए क्या कदम हैं?", ja:"職業経験を認定するための手順は何ですか？" }},
+
+
+{ d:"admin", fr:"J'ai besoin de mon attestation de travail", ctx:"Document RH courant",
+  ex:"J'ai besoin de mon attestation de travail pour mon rendez-vous à la Préfecture.",
+  t:{ ar:"أحتاج إلى شهادة عمل", ro:"Am nevoie de adeverința de muncă",
+      pt:"Preciso do meu certificado de trabalho", tr:"Çalışma belgeme ihtiyacım var",
+      vi:"Tôi cần giấy xác nhận lao động", pl:"Potrzebuję zaświadczenia o zatrudnieniu",
+      es:"Necesito mi certificado de trabajo", en:"I need my employment certificate",
+      de:"Ich brauche meine Arbeitsbescheinigung", it:"Ho bisogno del mio attestato di lavoro",
+      fa:"به گواهی کار خود نیاز دارم", th:"ฉันต้องการใบรับรองการทำงาน",
+      uk:"Мені потрібна довідка про роботу", wo:"Bëgg naa attestation travail bi",
+      hi:"मुझे अपने कार्य प्रमाण पत्र की आवश्यकता है", ja:"雇用証明書が必要です" }},
+{ d:"admin", fr:"Mon contrat se termine dans... mois", ctx:"Fin de CDDI — transition professionnelle",
+  ex:"Mon contrat se termine dans 3 mois — j'ai commencé mes recherches d'emploi.",
+  t:{ ar:"عقدي ينتهي بعد... أشهر", ro:"Contractul meu se termină în... luni",
+      pt:"O meu contrato termina daqui a... meses", tr:"Sözleşmem ... ay içinde bitiyor",
+      vi:"Hợp đồng của tôi kết thúc trong... tháng", pl:"Moja umowa kończy się za... miesiące",
+      es:"Mi contrato termina en... meses", en:"My contract ends in... months",
+      de:"Mein Vertrag läuft in ... Monaten aus", it:"Il mio contratto scade tra ... mesi",
+      fa:"قراردادم در ... ماه دیگر به پایان می‌رسد", th:"สัญญาของฉันสิ้นสุดในอีก... เดือน",
+      uk:"Мій контракт закінчується через... місяців", wo:"Contrat bi dina jeex ci... weer",
+      hi:"मेरा अनुबंध... महीनों में समाप्त होता है", ja:"私の契約は...ヶ月後に終わります" }},
+];;
+
+
+var QS = {
+  textile:{phys:[
+    {q:"Bonjour ! Pouvez-vous vous présenter en quelques mots ?",h:"Dites votre prénom, d'où vous venez, et pourquoi vous êtes là. 3 phrases suffisent.",l:0},
+    {q:"Pourquoi souhaitez-vous travailler dans le recyclage textile ?",h:"Pensez à ce qui vous plaît : l'ordre, aider les autres, l'environnement.",l:1},
+    {q:"Avez-vous déjà travaillé dans un entrepôt ou un atelier ?",h:"Si vous n'avez pas d'expérience, décrivez un travail similaire. Soyez honnête.",l:4},
+    {q:"Êtes-vous disponible à partir de 7 heures du matin et parfois le samedi ?",h:"Répondez clairement oui ou non. Expliquez vos contraintes si vous en avez.",l:2},
+    {q:"Comment réagissez-vous quand vous ne comprenez pas une consigne ?",h:"La bonne réponse : vous demandez à répéter. C'est une qualité !",l:2},
+    {q:"Avez-vous des questions à me poser ?",h:"Posez toujours au moins une question. Ça montre votre intérêt.",l:3}
+  ],tel:[
+    {q:"Allô, bonjour ! Je vous appelle d'EKITEE suite à votre candidature. Vous êtes disponible quelques minutes ?",h:"Dites si vous pouvez parler. Si mauvais moment, proposez un créneau.",l:2},
+    {q:"Pouvez-vous me présenter rapidement votre parcours ?",h:"Parlez lentement, 4 à 5 phrases maximum. Articulez bien.",l:0},
+    {q:"Êtes-vous à l'aise pour porter des charges et rester debout plusieurs heures ?",h:"Répondez honnêtement.",l:4},
+    {q:"Quand seriez-vous disponible pour commencer ?",h:"Donnez une date précise.",l:2},
+    {q:"Avez-vous un moyen de transport pour venir à Morancez ?",h:"Précisez : voiture, vélo, bus, covoiturage.",l:2},
+    {q:"Quelle est votre motivation pour rejoindre un Atelier Chantier d'Insertion ?",h:"Parlez de votre envie de reprendre un rythme, d'apprendre, d'être utile.",l:1}
+  ]},
+  gen:{phys:[
+    {q:"Bonjour ! Parlez-moi de vous.",h:"Présentez votre prénom, votre parcours et ce que vous cherchez.",l:0},
+    {q:"Pourquoi voulez-vous travailler dans notre entreprise ?",h:"Montrez que vous connaissez l'entreprise. Citez quelque chose de concret.",l:1},
+    {q:"Quelles sont vos qualités principales ? Donnez un exemple.",h:"Choisissez une qualité et illustrez avec une situation réelle.",l:3},
+    {q:"Parlez-moi d'une difficulté que vous avez surmontée.",h:"L'important est comment vous avez réagi, pas le problème lui-même.",l:4},
+    {q:"Où vous voyez-vous dans deux ans ?",h:"Montrez que vous voulez progresser. Évitez de dire que vous ne savez pas.",l:1},
+    {q:"Avez-vous des questions pour moi ?",h:"Posez au moins une question concrète.",l:3}
+  ],tel:[
+    {q:"Allô, bonjour ! Cinq minutes pour échanger ?",h:"Si vous pouvez parler, dites-le clairement.",l:2},
+    {q:"Présentez-vous en moins de deux minutes.",h:"Prénom, parcours, ce que vous cherchez. Parlez fort.",l:0},
+    {q:"Qu'est-ce qui vous a attiré dans cette offre d'emploi ?",h:"Citez 1 ou 2 éléments concrets.",l:1},
+    {q:"Avez-vous des contraintes d'horaires ou de déplacement ?",h:"Soyez honnête maintenant.",l:4},
+    {q:"Quelle est votre prétention salariale ?",h:"Si vous ne savez pas, demandez la fourchette prévue.",l:2},
+    {q:"Pouvez-vous venir passer un entretien la semaine prochaine ?",h:"Confirmez avec une date précise. Notez nom, lieu, heure.",l:3}
+  ]}
+};
+
+// ════════════════════════════════════
+// ÉTAT GLOBAL
+// ════════════════════════════════════
+var qIdx=0, score=0, mode='mix', langSim='fr', langLex='fr';
+var isRec=false, recognition=null, curText='', selMicId='', micStream=null;
+var freqSel=3;
+var profil=null;
+var hist=[];
+try{ hist=JSON.parse(localStorage.getItem('ek_hist')||'[]'); }catch(e){}
+try{ var p=localStorage.getItem('ek_profil'); if(p) profil=JSON.parse(p); }catch(e){}
+
+var synth=window.speechSynthesis;
+var hasSTT=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
+
+// ════════════════════════════════════
+// PROFIL
+// ════════════════════════════════════
+function demarrer() {
+  var prenom = document.getElementById('inp-prenom').value.trim();
+  if(!prenom) {
+    document.getElementById('inp-prenom').style.borderColor='#e24b4a';
+    document.getElementById('inp-prenom').focus();
+    return;
+  }
+  var langue = document.getElementById('inp-langue').value;
+  profil = {
+    id: profil && profil.id ? profil.id : 'ek_'+Date.now(),
+    prenom: prenom,
+    langue: langue,
+    date: new Date().toLocaleDateString('fr-FR')
+  };
+  try{ localStorage.setItem('ek_profil', JSON.stringify(profil)); }catch(e){}
+  // Mettre à jour la langue active
+  langSim = langue;
+  langLex = langue;
+  // Mettre à jour les pills de langue
+  majPillsSim();
+  // Mettre à jour la sélection dans le select langue
+  document.getElementById('inp-langue').value = langue;
+  // Cacher la modale
+  document.getElementById('overlay').style.display='none';
+  // Afficher la barre profil
+  var l = LANGS[langSim];
+  document.getElementById('profil-nom').textContent = '👤 '+prenom+' — '+(l?l.f+' '+l.n:'');
+  document.getElementById('profil-bar').style.display='flex';
+  // Mettre à jour l'historique existant avec le prénom
+  for(var i=0;i<hist.length;i++){
+    if(!hist[i].prenom||hist[i].prenom==='Anonyme') hist[i].prenom=prenom;
+  }
+  try{localStorage.setItem('ek_hist',JSON.stringify(hist));}catch(e){}
+}
+
+function changerProfil() {
+  if(profil) {
+    document.getElementById('inp-prenom').value = profil.prenom;
+    document.getElementById('inp-langue').value = profil.langue || 'fr';
+  }
+  // Changer le titre de la modale
+  document.querySelector('#overlay h2').textContent = 'Modifier mon profil';
+  document.getElementById('overlay').style.display='flex';
+}
+
+function deconnecter() {
+  // Effacer le profil mais garder l'historique
+  profil = null;
+  try{localStorage.removeItem('ek_profil');}catch(e){}
+  // Cacher la barre profil
+  document.getElementById('profil-bar').style.display='none';
+  document.getElementById('profil-nom').textContent='';
+  // Réinitialiser la modale pour un nouvel apprenant
+  document.getElementById('inp-prenom').value='';
+  document.getElementById('inp-langue').value='fr';
+  document.querySelector('#overlay h2').textContent='Séance terminée !';
+  // Réinitialiser le simulateur
+  synth.cancel();
+  if(isRec) stopMic();
+  qIdx=0; score=0; curText='';
+  document.getElementById('chat').innerHTML='';
+  document.getElementById('fb').className='fb';
+  document.getElementById('sfin').style.display='none';
+  document.getElementById('rz').style.display='block';
+  document.getElementById('rd').textContent='';
+  document.getElementById('pscore').textContent='0/12';
+  // Afficher la modale pour le prochain apprenant
+  document.getElementById('overlay').style.display='flex';
+  // Démarrer le simulateur en arrière-plan
+  showQ();
+}
+
+// ════════════════════════════════════
+// PILLS LANGUE
+// ════════════════════════════════════
+function majPillsSim() {
+  var wrap = document.getElementById('lpills-sim');
+  wrap.querySelectorAll('.lp').forEach(function(b) {
+    b.classList.toggle('on', b.getAttribute('data-lang')===langSim);
+  });
+}
+
+function initPills(containerId, currentLang, onSelect) {
+  var wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  Object.keys(LANGS).forEach(function(k) {
+    var v = LANGS[k];
+    var b = document.createElement('button');
+    b.className = 'lp' + (k===currentLang?' on':'');
+    b.textContent = v.f;
+    b.title = v.n;
+    b.setAttribute('data-lang', k);
+    b.onclick = function() {
+      wrap.querySelectorAll('.lp').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      onSelect(k);
+    };
+    wrap.appendChild(b);
+  });
+}
+
+// ════════════════════════════════════
+// ONGLETS
+// ════════════════════════════════════
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');
+  ['sim','lex','rap','pro'].forEach(function(p) {
+    var panel = document.getElementById('panel-'+p);
+    if(panel) panel.className = 'panel' + (p===id?' on':'');
+  });
+  if(id==='lex') renderLex();
+  if(id==='pro') renderProg();
+  if(id==='rap') renderPlanning();
+}
+
+// ════════════════════════════════════
+// SYNTHÈSE VOCALE
+// ════════════════════════════════════
+function nettoyerTexte(txt) {
+  // Supprimer ou remplacer les caractères que la synthèse vocale lit mal
+  return txt
+    .replace(/\(e\)/g, '')           // (e) -> rien
+    .replace(/\(s\)/g, '')           // (s) -> rien
+    .replace(/\(es\)/g, '')          // (es) -> rien
+    .replace(/\([^)]{1,3}\)/g, '')   // parenthèses courtes
+    .replace(/\.\.\./g, '')          // points de suspension
+    .replace(/—/g, ',')              // tiret long -> pause
+    .replace(/–/g, ',')              // tiret moyen -> pause
+    .replace(/\//g, ' ou ')          // barre oblique -> ou
+    .replace(/\*/g, '')              // astérisque
+    .replace(/↗/g, '')               // flèche
+    .replace(/🔊/g, '')              // émoji son
+    .replace(/\s+/g, ' ')            // espaces multiples
+    .trim();
+}
+
+function speak(txt, code, cb) {
+  if(!synth||!txt) return;
+  synth.cancel();
+  var u = new SpeechSynthesisUtterance(nettoyerTexte(txt));
+  u.lang = code||'fr-FR';
+  u.rate = parseFloat(document.getElementById('sspeed').value)||0.85;
+  if(cb) u.onend = cb;
+  synth.speak(u);
+}
+function rejouer() {
+  var qs=getQs(); if(qIdx<qs.length) speak(qs[qIdx].q,'fr-FR');
+}
+function ecouterBilan() {
+  var t=getQs().length*2, p=Math.round(score/t*100);
+  speak('Votre score est '+score+' points sur '+t+'. '+(p>=80?'Excellent !':p>=60?'Bon niveau, continuez !':'Continuez à vous entraîner !'),'fr-FR');
+}
+
+// ════════════════════════════════════
+// QUESTIONS
+// ════════════════════════════════════
+function getQs() {
+  var p = document.getElementById('stype').value==='tel'?'tel':'phys';
+  return QS[document.getElementById('sposte').value][p];
+}
+
+function addMsg(role, txt) {
+  if(mode==='tel') return;
+  var c=document.getElementById('chat');
+  var d=document.createElement('div'); d.className='msg '+role;
+  var av=document.createElement('div'); av.className='av '+role; av.textContent=role==='rh'?'RH':'Moi';
+  var b=document.createElement('div'); b.className='bub '+role; b.textContent=txt;
+  d.appendChild(av); d.appendChild(b); c.appendChild(d); c.scrollTop=c.scrollHeight;
+}
+
+function showQ() {
+  var qs=getQs();
+  if(qIdx>=qs.length){finir();return;}
+  var q=qs[qIdx];
+  document.getElementById('plbl').textContent='Q '+(qIdx+1)+'/'+qs.length;
+  document.getElementById('pf').style.width=Math.round(((qIdx+1)/qs.length)*100)+'%';
+  document.getElementById('cs').textContent=mode==='eco'?'':'💡 '+q.h;
+  document.getElementById('fb').className='fb';
+  document.getElementById('rd').textContent='';
+  document.getElementById('rd').className='rd';
+  curText='';
+  if(mode==='tel') {
+    document.getElementById('tst').textContent='Le recruteur parle…';
+    document.getElementById('twv').classList.remove('pause');
+    speak(q.q,'fr-FR',function(){
+      document.getElementById('tst').textContent='À vous — appuyez sur 🎤';
+      document.getElementById('twv').classList.add('pause');
+    });
+  } else {
+    addMsg('rh',q.q);
+    setTimeout(function(){speak(q.q,'fr-FR');},150);
+    if(mode==='oral'||mode==='eco') setTimeout(function(){if(!isRec)startMic();},1800);
+  }
+}
+
+function evalRep(rep) {
+  var n=rep.trim().split(/\s+/).filter(Boolean).length;
+  if(n<3) return{pt:0,cls:'non',ico:'⚠️',lbl:'À améliorer',msg:'Réponse trop courte. Essayez 2 ou 3 phrases.'};
+  if(n<10) return{pt:1,cls:'ok',ico:'💬',lbl:'Correct',msg:'Bonne base ! Ajoutez un exemple concret.'};
+  return{pt:2,cls:'bon',ico:'✅',lbl:'Très bien !',msg:'Excellente réponse — structurée et précise.'};
+}
+
+function valider() {
+  var rep=(curText||document.getElementById('rd').textContent||'').trim();
+  if(!rep){speak('Pouvez-vous repondre a la question','fr-FR');return;}
+  if(isRec) stopMic();
+  addMsg('ca',rep);
+  var ev=evalRep(rep);
+  score+=ev.pt;
+  document.getElementById('pscore').textContent=score+'/'+(qIdx+1)*2;
+  // Feedback
+  var qCur=getQs()[qIdx];
+  var entretienLex=LEX_FULL.filter(function(e){return e.d==='entretien';});
+  var lex=entretienLex[qCur.l]||null;
+  var tr=lex&&lex.t&&lex.t[langSim]||'';
+  var l=LANGS[langSim];
+  document.getElementById('fbt').textContent=ev.ico+' '+ev.lbl;
+  var extra=ev.pt<2&&tr&&lex?('<br><small style="color:#5f5e5a;display:block;margin-top:3px">Expression utile : <strong>'+lex.fr+'</strong><br>'+(l?l.f+' ':'')+tr+'</small>'):'';
+  document.getElementById('fbb').innerHTML=ev.msg+extra;
+  document.getElementById('fb').className='fb on '+ev.cls;
+  // Avancer maintenant
+  qIdx++;
+  // Lire le feedback puis passer à la suite
+  var nextQ=function(){
+    if(qIdx<getQs().length) showQ();
+    else finir();
+  };
+  synth.cancel();
+  var u=new SpeechSynthesisUtterance(nettoyerTexte(ev.msg));
+  u.lang='fr-FR';
+  u.rate=parseFloat(document.getElementById('sspeed').value)||0.85;
+  u.onend=function(){setTimeout(nextQ,500);};
+  u.onerror=function(){setTimeout(nextQ,500);};
+  synth.speak(u);
+  // Filet de sécurité — si synthèse bloque, on avance quand même
+  setTimeout(nextQ, 5000);
+}
+
+function finir() {
+  document.getElementById('rz').style.display='none';
+  var t=getQs().length*2, p=Math.round(score/t*100);
+  var m=p>=80?'Excellent':p>=60?'Bon niveau':p>=40?'À consolider':'À reprendre';
+  document.getElementById('fsc').textContent=score+'/'+t;
+  document.getElementById('fme').textContent=m;
+  document.getElementById('sfin').style.display='block';
+  if(mode!=='tel') addMsg('rh','Merci pour cet entretien. Nous vous recontacterons sous 48 heures. Bonne journée !');
+  else{document.getElementById('tst').textContent='Appel terminé';document.getElementById('twv').classList.add('pause');}
+  // Sauvegarder
+  hist.unshift({
+    prenom:profil?profil.prenom:'Anonyme',
+    date:new Date().toLocaleDateString('fr-FR'),
+    score:score,total:t,pct:p,mention:m,
+    poste:document.getElementById('sposte').value,
+    type:document.getElementById('stype').value
+  });
+  try{localStorage.setItem('ek_hist',JSON.stringify(hist.slice(0,50)));}catch(e){}
+  setTimeout(ecouterBilan,2000);
+  // Toujours proposer la saisie du profil après la séance
+  setTimeout(function(){
+    document.querySelector('#overlay h2').textContent = profil&&profil.prenom ? 'Séance enregistrée !' : 'Entrez votre prénom pour sauvegarder';
+    document.querySelector('#overlay p').textContent = profil&&profil.prenom ? 'Votre séance a été enregistrée sous le nom '+profil.prenom+'.' : 'Entrez votre prénom pour que vos résultats soient enregistrés.';
+    if(profil&&profil.prenom){
+      document.getElementById('inp-prenom').value=profil.prenom;
+      document.getElementById('inp-langue').value=profil.langue||'fr';
+    }
+    document.getElementById('overlay').style.display='flex';
+  }, 4000);
+}
+
+function restart() {
+  qIdx=0;score=0;curText='';
+  synth.cancel();if(isRec)stopMic();
+  document.getElementById('chat').innerHTML='';
+  document.getElementById('fb').className='fb';
+  document.getElementById('sfin').style.display='none';
+  document.getElementById('rz').style.display='block';
+  document.getElementById('rd').textContent='';
+  document.getElementById('rd').className='rd';
+  document.getElementById('pscore').textContent='0/12';
+  if(mode==='tel'){document.getElementById('tst').textContent='En communication…';document.getElementById('twv').classList.remove('pause');}
+  showQ();
+}
+
+function effacer(){curText='';var d=document.getElementById('rd');d.textContent='';d.className='rd';}
+function aide(){
+  var q=getQs()[qIdx];
+  if(!q) return;
+  var entretienLex=LEX_FULL.filter(function(e){return e.d==='entretien';});
+  var lex=entretienLex[q.l];
+  alert('Conseil : '+q.h+(lex?' -- Expression utile : '+lex.fr:''));
+}
+
+// ════════════════════════════════════
+// MODES
+// ════════════════════════════════════
+function setMode(m, el) {
+  mode=m;
+  document.querySelectorAll('.mb').forEach(function(b){b.classList.remove('on','ton');});
+  el.classList.add(m==='tel'?'ton':'on');
+  document.getElementById('tel').classList.toggle('on',m==='tel');
+  document.getElementById('chat-wrap').style.display=m==='tel'?'none':'block';
+  document.getElementById('rz').style.display=m==='eco'?'none':'block';
+  restart();
+}
+
+// ════════════════════════════════════
+// MICRO
+// ════════════════════════════════════
+function initMicro() {
+  if(!hasSTT) {
+    var c=document.getElementById('compat');
+    c.classList.add('on');
+    c.textContent='⚠️ La reconnaissance vocale nécessite Chrome ou Edge. Vous pouvez taper vos réponses.';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream) {
+    micStream=stream;
+    var bm=document.getElementById('bmic');
+    bm.style.borderColor='#1d9e75';bm.style.background='#e1f5ee';bm.style.color='#085041';
+    // Lister micros
+    navigator.mediaDevices.enumerateDevices().then(function(devices) {
+      var micros=devices.filter(function(d){return d.kind==='audioinput';});
+      if(micros.length>1) {
+        var mr=document.getElementById('mic-row');
+        var sel=document.getElementById('mic-sel');
+        mr.style.display='flex';sel.innerHTML='';
+        micros.forEach(function(m,i) {
+          var o=document.createElement('option');
+          o.value=m.deviceId;o.textContent=m.label||('Micro '+(i+1));
+          var lbl=(m.label||'').toLowerCase();
+          if(lbl.indexOf('casque')>=0||lbl.indexOf('headset')>=0||lbl.indexOf('headphone')>=0||lbl.indexOf('usb')>=0){
+            o.selected=true;selMicId=m.deviceId;
+          }
+          sel.appendChild(o);
+        });
+        if(!selMicId&&micros[0]) selMicId=micros[0].deviceId;
+      }
+    }).catch(function(){});
+  }).catch(function(err) {
+    var c=document.getElementById('compat');c.classList.add('on');
+    if(err.name==='NotAllowedError')
+      c.innerHTML='🔒 Accès micro refusé. Cliquez sur le cadenas dans la barre d\'adresse → Microphone → Autoriser → rechargez.';
+    else if(err.name==='NotFoundError')
+      c.innerHTML='🎤 Aucun micro détecté. Vérifiez que votre casque est branché.';
+    else
+      c.innerHTML='⚠️ Micro inaccessible ('+err.name+'). Vous pouvez taper vos réponses.';
+  });
+}
+
+function buildRec() {
+  if(!hasSTT) return null;
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var r=new SR();
+  r.lang='fr-FR';r.interimResults=true;r.continuous=true;
+  r.onresult=function(e) {
+    var interim='',final='';
+    for(var i=e.resultIndex;i<e.results.length;i++) {
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    var d=document.getElementById('rd');
+    d.textContent=(curText?(curText+' '):'')+(final||interim);
+    d.classList.toggle('li',!!interim&&!final);
+    d.classList.toggle('ok',!!(curText||final));
+    if(final) curText=(curText?curText+' '+final:final).trim();
+    document.getElementById('mic-lvl').textContent=interim?'🟢 Voix captée':'';
+  };
+  r.onstart=function(){document.getElementById('mic-lvl').textContent='🟢 Micro actif — parlez…';};
+  r.onspeechend=function(){document.getElementById('mic-lvl').textContent='⏳ Traitement…';};
+  r.onend=function(){setMicUI(false);document.getElementById('mic-lvl').textContent='';};
+  r.onerror=function(e) {
+    setMicUI(false);document.getElementById('mic-lvl').textContent='';
+    if(e.error!=='aborted') {
+      var c=document.getElementById('compat');c.classList.add('on');
+      c.textContent='❌ '+(e.error==='no-speech'?'Aucune voix détectée — parlez plus fort.':'Erreur micro : '+e.error);
+    }
+  };
+  return r;
+}
+
+function setMicUI(on) {
+  isRec=on;
+  var b=document.getElementById('bmic');
+  var s=document.getElementById('recst');
+  if(on){b.classList.add('rec');b.textContent='⏹ Stop';s.style.display='block';}
+  else{b.classList.remove('rec');b.textContent='🎤 Parler';s.style.display='none';}
+}
+
+function startMic() {
+  if(!hasSTT) return;
+  synth.cancel();
+  if(recognition){try{recognition.stop();}catch(e){}}
+  recognition=buildRec();
+  if(recognition) setTimeout(function(){try{recognition.start();setMicUI(true);}catch(e){console.warn(e);}},100);
+}
+function stopMic() {
+  if(recognition){try{recognition.stop();}catch(e){}}
+  setMicUI(false);
+}
+function toggleMic(){if(isRec)stopMic();else startMic();}
+
+function toggleMicTel() {
+  var b=document.getElementById('tmic');
+  if(isRec){stopMic();b.classList.remove('rec');setTimeout(function(){valider();},500);}
+  else{recognition=buildRec();if(recognition){try{recognition.start();setMicUI(true);b.classList.add('rec');}catch(e){}}}
+}
+function finirAppel(){synth.cancel();setMode('mix',document.getElementById('m-mix'));}
+
+// ════════════════════════════════════
+// LEXIQUE
+// ════════════════════════════════════
+function renderLex() {
+  renderDomPills();
+  initPills('lpills-lex',langLex,function(k){langLex=k;renderLexCards();});
+  renderLexCards();
+}
+var lexDom='entretien';
+var domLabels={entretien:'💼 Entretien',atelier:'🧵 Atelier',formation:'🎓 Formation',numerique:'💻 Numérique',vente:'🛒 Vente',dpp:'📋 DPP',etudes:'📚 Études',client:'🤝 Client',reunion:'👥 Réunion',securite:'⚠️ Sécurité',admin:'📝 Admin'};
+
+function renderDomPills(){
+  var wrap=document.getElementById('dom-pills');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  Object.keys(domLabels).forEach(function(k){
+    var b=document.createElement('button');
+    b.className='lp'+(k===lexDom?' on':'');
+    b.textContent=domLabels[k];
+    b.onclick=function(){lexDom=k;wrap.querySelectorAll('.lp').forEach(function(x){x.classList.remove('on');});b.classList.add('on');renderLexCards();};
+    wrap.appendChild(b);
+  });
+}
+
+function renderLexCards() {
+  var grid=document.getElementById('lex-grid');
+  grid.innerHTML='';
+  var l=LANGS[langLex];
+  var items=LEX_FULL.filter(function(item){return item.d===lexDom;});
+  if(!items.length){
+    grid.textContent='Aucune expression dans ce domaine.';return;
+  }
+  items.forEach(function(item) {
+    var tr=(item.t&&item.t[langLex])||'';
+    var card=document.createElement('div');
+    card.className='lex-card';
+    var frDiv=document.createElement('div');frDiv.className='lex-fr';frDiv.textContent=item.fr;
+    var ctxDiv=document.createElement('div');ctxDiv.className='lex-ctx';ctxDiv.textContent=item.ctx||'';
+    var exDiv=document.createElement('div');exDiv.className='lex-ex';exDiv.textContent=item.ex?'Ex : '+item.ex:'';
+    card.appendChild(frDiv);
+    card.appendChild(ctxDiv);
+    if(tr){
+      var trDiv=document.createElement('div');trDiv.className='lex-tr';
+      if(l&&l.d==='rtl') trDiv.setAttribute('dir','rtl');
+      trDiv.textContent=(l?l.f+' ':'')+tr;
+      card.appendChild(trDiv);
+    }
+    card.appendChild(exDiv);
+    var btn1=document.createElement('button');btn1.className='abtn';btn1.textContent='🔊 FR';
+    btn1.onclick=(function(f){return function(){speak(f,'fr-FR');};})(item.fr);
+    card.appendChild(btn1);
+    if(tr&&l){
+      var btn2=document.createElement('button');btn2.className='abtn';btn2.textContent='🔊 '+l.n;
+      btn2.onclick=(function(t,c){return function(){speak(t,c);};})(tr,l.c);
+      card.appendChild(btn2);
+    }
+    grid.appendChild(card);
+  });
+}
+
+// ════════════════════════════════════
+// RAPPELS
+// ════════════════════════════════════
+var JOURS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+var FREQ_DAYS={3:[0,2,4],5:[0,1,2,3,4],7:[0,1,2,3,4,5,6]};
+var MSGS=['💪 Entraînement · 15 min','📚 Vocabulaire · 10 min','🎯 Révision · 15 min'];
+
+function setFreq(n,el) {
+  freqSel=n;
+  document.querySelectorAll('.fc').forEach(function(c){c.classList.remove('on');});
+  el.classList.add('on');renderPlanning();
+}
+function renderPlanning() {
+  var wrap=document.getElementById('plan-wrap');if(!wrap)return;
+  var days=FREQ_DAYS[freqSel];wrap.innerHTML='';
+  JOURS.forEach(function(j,i) {
+    var on=days.indexOf(i)>=0;
+    var row=document.createElement('div');row.className='plan-row';
+    row.innerHTML='<span class="dp '+(on?'on':'off')+'">'+j+'</span>'
+      +'<span style="font-size:12px;color:'+(on?'#1c1c1c':'#b4b2a9')+'">'+(on?MSGS[days.indexOf(i)%3]:'Repos')+'</span>';
+    wrap.appendChild(row);
+  });
+  // Calculer le prochain jour d'entraînement
+  var aujourd = new Date();
+  var jourSemaine = aujourd.getDay(); // 0=dim, 1=lun...
+  // Convertir : JS commence dimanche, nous lundi
+  var jourJS = (jourSemaine + 6) % 7; // 0=lun, 1=mar...
+  var prochainJour = -1;
+  var prochainDans = 8;
+  for(var i=1; i<=7; i++) {
+    var jourTest = (jourJS + i) % 7;
+    if(days.indexOf(jourTest) >= 0) {
+      prochainJour = jourTest;
+      prochainDans = i;
+      break;
+    }
+  }
+  // Si aujourd'hui est un jour d'entraînement
+  if(days.indexOf(jourJS) >= 0) {
+    prochainJour = jourJS;
+    prochainDans = 0;
+  }
+  var el_jour = document.getElementById('prochain-jour');
+  var el_date = document.getElementById('prochain-date');
+  if(el_jour && prochainJour >= 0) {
+    var dateProchain = new Date(aujourd);
+    dateProchain.setDate(aujourd.getDate() + prochainDans);
+    var options = {weekday:'long', day:'numeric', month:'long'};
+    var dateStr = dateProchain.toLocaleDateString('fr-FR', options);
+    el_jour.textContent = prochainDans === 0 ? "Aujourd'hui !" : JOURS[prochainJour];
+    el_date.textContent = prochainDans === 0 ? "C'est votre jour d'entraînement !" : dateStr;
+    el_jour.style.color = prochainDans === 0 ? '#085041' : '#1d9e75';
+  }
+}
+// copierSMS supprimé — SMS déplacé dans MO formateur
+
+// ════════════════════════════════════
+// PROGRESSION
+// ════════════════════════════════════
+function renderProg() {
+  document.getElementById('stsea').textContent=hist.length;
+  if(!hist.length){
+    document.getElementById('stbst').textContent='—';
+    document.getElementById('stmoy').textContent='—';
+    document.getElementById('stpro').textContent='—';
+    document.getElementById('hist-wrap').innerHTML='<div style="text-align:center;padding:1.5rem">Aucune séance enregistrée.</div>';
+    return;
+  }
+  var pcts=hist.map(function(h){return h.pct;});
+  document.getElementById('stbst').textContent=Math.max.apply(null,pcts)+'%';
+  document.getElementById('stmoy').textContent=Math.round(pcts.reduce(function(a,b){return a+b;},0)/pcts.length)+'%';
+  var prog=hist.length>1?Math.round(pcts[0]-pcts[pcts.length-1]):0;
+  document.getElementById('stpro').textContent=(prog>=0?'+':'')+prog+'%';
+  var rows=hist.map(function(h){
+    return '<tr><td>'+( h.prenom||'?')+'</td><td>'+h.date+'</td><td>'+h.score+'/'+h.total+'</td>'
+      +'<td style="color:'+(h.pct>=80?'#085041':h.pct>=60?'#854f0b':'#a32d2d')+'">'+h.pct+'%</td>'
+      +'<td>'+h.mention+'</td></tr>';
+  }).join('');
+  document.getElementById('hist-wrap').innerHTML=
+    '<table class="hist-t"><thead><tr><th>Prénom</th><th>Date</th><th>Score</th><th>%</th><th>Mention</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function exporterResultats(){
+  if(!hist.length){
+    alert('Aucune seance enregistree. Effectuez au moins une seance avant de lancer l export.');
+    return;
+  }
+  var prenom=profil&&profil.prenom?profil.prenom:'Apprenant';
+  var langue=profil&&profil.langue?profil.langue:'fr';
+  var date=new Date().toLocaleDateString('fr-FR');
+  var pcts=hist.map(function(h){return h.pct;});
+  var meilleur=Math.max.apply(null,pcts);
+  var moyen=Math.round(pcts.reduce(function(a,b){return a+b;},0)/pcts.length);
+  var evolution=hist.length>1?Math.round(pcts[0]-pcts[pcts.length-1]):0;
+
+  var lignes=[
+    '=== RAPPORT DE PROGRESSION EKITEE ===',
+    'Apprenant : '+prenom,
+    'Langue maternelle : '+langue,
+    'Date du rapport : '+date,
+    '',
+    '--- STATISTIQUES ---',
+    'Nombre de séances : '+hist.length,
+    'Meilleur score : '+meilleur+'%',
+    'Score moyen : '+moyen+'%',
+    'Evolution : '+(evolution>=0?'+':'')+evolution+'%',
+    '',
+    '--- DÉTAIL DES SÉANCES ---',
+  ];
+
+  hist.forEach(function(h,i){
+    lignes.push((i+1)+'. '+h.date+' | '+h.score+'/'+h.total+' pts | '+h.pct+'% | '+h.mention+' | '+(h.poste||'')+(h.type?' ('+h.type+')':''));
+  });
+
+  lignes.push('');
+  lignes.push('Document généré par le Simulateur EKITEE - ekitee-simulateur.netlify.app');
+
+  var rapport=lignes.join('\n');
+
+  // Option 1 : ouvrir un email pré-rempli
+  var sujet=encodeURIComponent('Résultats simulateur EKITEE — '+prenom+' — '+date);
+  var corps=encodeURIComponent(rapport);
+  var mailtoLink='mailto:marieangeles.perez@gmail.com?subject='+sujet+'&body='+corps;
+
+  // Option 2 : copier dans le presse-papier
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(rapport).then(function(){
+      var msg='Rapport copie. Voulez-vous ouvrir votre messagerie ?';
+      if(confirm(msg)){
+        window.open(mailtoLink,'_blank');
+      }
+    }).catch(function(){
+      window.open(mailtoLink,'_blank');
+    });
+  } else {
+    window.open(mailtoLink,'_blank');
+  }
+}
+
+function clearHist(){
+  hist=[];try{localStorage.removeItem('ek_hist');}catch(e){}renderProg();
+}
+
+// ════════════════════════════════════
+// DÉMARRAGE
+// ════════════════════════════════════
+function resetProfil() {
+  try{localStorage.removeItem('ek_profil');}catch(e){}
+  profil = null;
+  document.getElementById('inp-prenom').value = '';
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+// Bouton de la modale
+// Boutons modale attaches en HTML
+
+// Initialiser les pills langues
+initPills('lpills-sim','fr',function(k){langSim=k;});
+
+// Démarrer directement sans modale
+// La modale apparaît après la première séance
+initMicro();
+renderPlanning();
+showQ();
+</script>
+</body>
+</html>
