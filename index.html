@@ -1324,15 +1324,13 @@ function renderLexCards() {
                 recLex.lang='fr-FR';
                 recLex.interimResults=true;
                 recLex.continuous=true;
-                var secondes=0;
-                var compteur=setInterval(function(){
-                  secondes++;
-                  if(secondes>=30){clearInterval(compteur);}
-                },1000);
+                var compteur=setInterval(function(){},1000);
+                var dernierTexte=''; // Variable dédiée pour stocker la transcription
                 recLex.onresult=function(e){
                   var txt='';
                   for(var i=0;i<e.results.length;i++) txt+=e.results[i][0].transcript;
-                  bm.textContent='🟢 '+txt.substring(0,35)+(txt.length>35?'...':'');
+                  dernierTexte=txt; // Stocker le texte complet
+                  bm.textContent='🟢 '+txt.substring(0,40)+(txt.length>40?'...':'');
                 };
                 recLex.onerror=function(ev){
                   if(ev.error!=='aborted'){
@@ -1344,20 +1342,23 @@ function renderLexCards() {
                 };
                 recLex.onend=function(){
                   clearInterval(compteur);
-                  var textCapte=bm.textContent.replace('🟢 ','').replace(' — clic stop','').trim();
                   recLex=null;
                   bm.textContent='🎤 Me lire';
                   bm.style.background='#fcebeb';
                   bm.style.color='#a32d2d';
-                  // Afficher le feedback
-                  if(textCapte && textCapte.length>2 && textCapte!='⏹ Cliquez ici pour arrêter'){
-                    fd.innerHTML=
-                      '<div style="color:#5f5e5a;margin-bottom:.35rem"><strong>Vous avez dit :</strong></div>'+
-                      '<div style="color:#1c1c1c;font-style:italic;margin-bottom:.5rem">'+textCapte+'</div>'+
-                      '<div style="color:#5f5e5a;margin-bottom:.35rem"><strong>Exemple original :</strong></div>'+
-                      '<div style="color:#085041;margin-bottom:.5rem">'+ex+'</div>'+
-                      '<button class="abtn" style="background:#e6f1fb;color:#0c447c;border-color:#378add" onclick="speak(''+ex.replace(/'/g,"\'")+"','fr-FR')"+'">'+'🔊 Réécouter l'exemple</button>'+
-                      ' <button class="abtn" style="background:#e1f5ee;color:#085041;border-color:#1d9e75" onclick="speak(''+textCapte.replace(/'/g,"\'")+"','fr-FR')"+'">'+'🔊 Entendre ma phrase</button>';
+                  // Afficher le feedback avec dernierTexte
+                  if(dernierTexte && dernierTexte.length>2){
+                    // Vider et reconstruire via DOM (pas innerHTML pour éviter les problèmes d'apostrophes)
+                    fd.innerHTML='';
+                    var t1=document.createElement('div');t1.style.cssText='color:#5f5e5a;margin-bottom:.35rem;font-weight:700';t1.textContent='Vous avez dit :';
+                    var t2=document.createElement('div');t2.style.cssText='color:#1c1c1c;font-style:italic;margin-bottom:.5rem';t2.textContent=dernierTexte;
+                    var t3=document.createElement('div');t3.style.cssText='color:#5f5e5a;margin-bottom:.35rem;font-weight:700';t3.textContent='Exemple original :';
+                    var t4=document.createElement('div');t4.style.cssText='color:#085041;margin-bottom:.5rem';t4.textContent=ex;
+                    var b1=document.createElement('button');b1.className='abtn';b1.style.cssText='background:#e6f1fb;color:#0c447c;border-color:#378add;margin-right:4px';b1.textContent='🔊 Réécouter l'exemple';
+                    b1.onclick=(function(e){return function(){speak(e,'fr-FR');};})(ex);
+                    var b2=document.createElement('button');b2.className='abtn';b2.style.cssText='background:#e1f5ee;color:#085041;border-color:#1d9e75';b2.textContent='🔊 Entendre ma phrase';
+                    b2.onclick=(function(t){return function(){speak(t,'fr-FR');};})(dernierTexte);
+                    fd.appendChild(t1);fd.appendChild(t2);fd.appendChild(t3);fd.appendChild(t4);fd.appendChild(b1);fd.appendChild(b2);
                     fd.style.display='block';
                   }
                 };
@@ -1367,8 +1368,8 @@ function renderLexCards() {
                   bm.style.color='#a32d2d';
                   recLex=null;
                 }
-                // Arrêt auto 30s
-                setTimeout(function(){if(recLex){try{recLex.stop();}catch(e){}}},30000);
+                // Arrêt auto 60s
+                setTimeout(function(){if(recLex){try{recLex.stop();}catch(e){}}},60000);
               },600);
             };
             synth.speak(u);
