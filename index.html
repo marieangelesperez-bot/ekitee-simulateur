@@ -1341,6 +1341,11 @@ function renderLexCards() {
                   recLex=null;
                 };
                 recLex.onend=function(){
+                  // Si l'apprenant n'a pas cliqué stop — redémarrer automatiquement
+                  if(recLex && bm.textContent.indexOf('🟢')>=0){
+                    try{recLex.start();}catch(e){}
+                    return;
+                  }
                   clearInterval(compteur);
                   recLex=null;
                   bm.textContent='🎤 Me lire';
