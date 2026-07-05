@@ -1244,13 +1244,61 @@ function renderLexCards() {
       card.appendChild(trDiv);
     }
     card.appendChild(exDiv);
-    var btn1=document.createElement('button');btn1.className='abtn';btn1.textContent='🔊 FR';
+    // Boutons audio expression
+    var btn1=document.createElement('button');btn1.className='abtn';btn1.textContent='🔊 Expression FR';
     btn1.onclick=(function(f){return function(){speak(f,'fr-FR');};})(item.fr);
     card.appendChild(btn1);
     if(tr&&l){
       var btn2=document.createElement('button');btn2.className='abtn';btn2.textContent='🔊 '+l.n;
       btn2.onclick=(function(t,c){return function(){speak(t,c);};})(tr,l.c);
       card.appendChild(btn2);
+    }
+    // Bouton audio exemple
+    if(item.ex){
+      var btnEx=document.createElement('button');
+      btnEx.className='abtn';
+      btnEx.style.background='#faeeda';
+      btnEx.style.color='#854f0b';
+      btnEx.style.borderColor='#ba7517';
+      btnEx.textContent='🔊 Exemple';
+      btnEx.onclick=(function(ex){return function(){speak(ex,'fr-FR');};})(item.ex);
+      card.appendChild(btnEx);
+      // Bouton micro pour lire l'exemple
+      if(hasSTT){
+        var btnMic=document.createElement('button');
+        btnMic.className='abtn';
+        btnMic.style.background='#fcebeb';
+        btnMic.style.color='#a32d2d';
+        btnMic.style.borderColor='#e24b4a';
+        btnMic.textContent='🎤 Me lire';
+        btnMic.onclick=(function(ex, bm){
+          return function(){
+            if(bm.textContent==='⏹ Stop'){
+              if(recognition){try{recognition.stop();}catch(e){}}
+              bm.textContent='🎤 Me lire';
+              bm.style.background='#fcebeb';
+              return;
+            }
+            speak(ex,'fr-FR', function(){
+              // Après écoute, activer le micro pour que l'apprenant répète
+              bm.textContent='🎤 Répétez...';
+              bm.style.background='#e24b4a';
+              bm.style.color='#fff';
+              var r=buildRec();
+              if(r){
+                r.onend=function(){
+                  bm.textContent='🎤 Me lire';
+                  bm.style.background='#fcebeb';
+                  bm.style.color='#a32d2d';
+                };
+                try{r.start();}catch(e){}
+                setTimeout(function(){try{r.stop();}catch(e){}},6000);
+              }
+            });
+          };
+        })(item.ex, btnMic);
+        card.appendChild(btnMic);
+      }
     }
     grid.appendChild(card);
   });
