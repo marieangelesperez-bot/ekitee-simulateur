@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulateur d'entretien EKITEE</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f3ef;color:#1c1c1c;padding:.75rem;font-size:14px}
+.wrap{max-width:640px;margin:0 auto}
+.hdr{background:#085041;border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem}
+.hdr h1{font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
+.hdr p{font-size:12px;color:#7bc8a0;font-style:italic}
+/* MODALE */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;max-width:400px;width:100%}
+.modal h2{font-size:17px;font-weight:700;color:#085041;margin-bottom:.25rem}
+.modal p{font-size:12px;color:#5f5e5a;margin-bottom:1rem}
+.modal label{font-size:11px;color:#5f5e5a;display:block;margin-bottom:.3rem;margin-top:.6rem}
+.modal input,.modal select{width:100%;border:1px solid #ccc;border-radius:6px;padding:.5rem .65rem;font-size:14px;font-family:Arial,sans-serif;margin-bottom:.25rem}
+.modal .btn-start{width:100%;padding:.65rem;background:#085041;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-top:.75rem}
+.modal .note{font-size:10px;color:#b4b2a9;margin-top:.5rem;text-align:center}
+/* BARRE PROFIL */
+.profil-bar{background:#085041;border-radius:7px;padding:.4rem .75rem;margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between}
+.profil-bar span{font-size:12px;color:#fff}
+.profil-bar button{font-size:10px;padding:2px 8px;border-radius:99px;background:#e1f5ee;color:#085041;border:none;cursor:pointer}
+/* TABS */
+.tabs{display:flex;gap:3px;background:#fff;border:1px solid #ccc;border-radius:8px;padding:3px;margin-bottom:.75rem}
+.tab{flex:1;padding:.4rem .25rem;font-size:11px;font-weight:600;border:none;border-radius:5px;cursor:pointer;background:none;color:#5f5e5a}
+.tab.on{background:#085041;color:#fff}
+.panel{display:none}.panel.on{display:block}
+/* CONFIG */
+.cfg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.5rem}
+.cfg label{font-size:10px;color:#5f5e5a;display:block;margin-bottom:2px}
+select{width:100%;border:1px solid #ccc;border-radius:5px;padding:.35rem .5rem;font-size:12px;font-family:Arial,sans-serif;background:#fff}
+/* LANG PILLS */
+.lpills{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:.5rem}
+.lp{font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid #ccc;background:#f4f3ef;color:#5f5e5a;cursor:pointer}
+.lp.on{background:#085041;color:#fff;border-color:#085041}
+/* MODES */
+.modes{display:flex;gap:4px;margin-bottom:.5rem;flex-wrap:wrap}
+.mb{flex:1;min-width:70px;padding:.35rem .25rem;font-size:11px;font-weight:600;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#f4f3ef;color:#5f5e5a;text-align:center}
+.mb.on{background:#e1f5ee;color:#085041;border-color:#1d9e75}
+.mb.ton{background:#faeeda;color:#854f0b;border-color:#ba7517}
+/* COMPAT */
+.compat{display:none;background:#faeeda;border:1px solid #ba7517;border-radius:7px;padding:.5rem .75rem;font-size:12px;color:#854f0b;margin-bottom:.5rem}
+.compat.on{display:block}
+/* MIC SELECT */
+.mic-row{display:none;align-items:center;gap:6px;margin-bottom:.5rem;flex-wrap:wrap}
+.mic-row label{font-size:10px;color:#5f5e5a}
+/* PROGRESS */
+.prog{background:#fff;border:1px solid #ccc;border-radius:7px;padding:.4rem .65rem;margin-bottom:.5rem;display:flex;align-items:center;gap:8px}
+.prog span{font-size:11px;color:#5f5e5a;white-space:nowrap}
+.pbar{flex:1;height:4px;background:#ccc;border-radius:2px}
+.pf{height:100%;background:#1d9e75;border-radius:2px;transition:width .3s}
+.btn-re{font-size:10px;padding:2px 8px;border-radius:99px;background:#e6f1fb;color:#0c447c;border:1px solid #378add;cursor:pointer}
+/* TÉLÉPHONE */
+.tel{display:none;background:#1a1a2e;border-radius:18px;padding:1rem;margin-bottom:.5rem;border:3px solid #333}
+.tel.on{display:block}
+.tel-sc{background:#0d1117;border-radius:12px;padding:1rem;margin-bottom:.75rem;text-align:center}
+.tel-cl{font-size:11px;color:#8b949e;margin-bottom:3px}
+.tel-nm{font-size:17px;font-weight:700;color:#f0f6fc;margin-bottom:.35rem}
+.tel-st{font-size:11px;color:#3fb950;margin-bottom:.35rem}
+.tel-wv{display:flex;align-items:center;justify-content:center;gap:3px;height:24px}
+.tel-wv span{display:block;width:3px;background:#3fb950;border-radius:2px;animation:wv 1s ease-in-out infinite}
+.tel-wv span:nth-child(2){animation-delay:.1s}.tel-wv span:nth-child(3){animation-delay:.2s}
+.tel-wv span:nth-child(4){animation-delay:.3s}.tel-wv span:nth-child(5){animation-delay:.4s}
+.tel-wv.pause span{animation:none;height:3px}
+@keyframes wv{0%,100%{height:4px}50%{height:20px}}
+.tel-bt{display:flex;justify-content:center;gap:1.25rem}
+.tbt{width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:17px}
+.tbt.mic{background:#3fb950;color:#0d1117}
+.tbt.mic.rec{background:#ff4444;animation:pulse 1s infinite}
+.tbt.end{background:#ff4444;color:#fff}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+/* CHAT */
+.chat{background:#fff;border:1px solid #ccc;border-radius:10px;padding:.65rem;min-height:160px;max-height:260px;overflow-y:auto;margin-bottom:.5rem;display:flex;flex-direction:column;gap:7px}
+.msg{display:flex;gap:7px;align-items:flex-start}
+.msg.rh{flex-direction:row}.msg.ca{flex-direction:row-reverse}
+.av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.av.rh{background:#e6f1fb;color:#0c447c}.av.ca{background:#e1f5ee;color:#085041}
+.bub{max-width:78%;padding:.45rem .65rem;border-radius:9px;font-size:13px;line-height:1.55}
+.bub.rh{background:#f4f3ef;border:1px solid #ddd;border-top-left-radius:2px}
+.bub.ca{background:#e6f1fb;border:1px solid #c2d9f0;border-top-right-radius:2px}
+/* FEEDBACK */
+.fb{display:none;border:1px solid #ccc;border-radius:9px;padding:.55rem .75rem;margin-bottom:.5rem;font-size:12px}
+.fb.on{display:block}
+.fb-t{font-weight:700;margin-bottom:3px;font-size:13px}
+.fb.bon{border-color:#1d9e75;background:#e1f5ee}
+.fb.ok{border-color:#ba7517;background:#faeeda}
+.fb.non{border-color:#e24b4a;background:#fcebeb}
+/* CONSEIL */
+.cs{font-size:11px;color:#5f5e5a;font-style:italic;padding:.15rem 0 .4rem;display:block}
+/* ZONE RÉPONSE */
+.rz label{font-size:10px;color:#5f5e5a;display:flex;justify-content:space-between;margin-bottom:.25rem}
+.rd{background:#fff;border:1px solid #ccc;border-radius:7px;padding:.5rem .65rem;min-height:60px;font-size:13px;color:#1c1c1c;line-height:1.55;margin-bottom:.4rem;word-break:break-word;outline:none}
+.rd.li{border-color:#e24b4a;background:#fff8f8}
+.rd.ok{border-color:#1d9e75}
+.vrow{display:flex;gap:5px;flex-wrap:wrap}
+.bmic{padding:.45rem .85rem;border-radius:99px;font-size:12px;font-weight:600;border:1px solid #ccc;background:#f4f3ef;color:#5f5e5a;cursor:pointer}
+.bmic.on{border-color:#e24b4a;background:#fcebeb;color:#a32d2d}
+.bmic.rec{background:#e24b4a;color:#fff;animation:pulse 1s infinite}
+/* BOUTONS */
+.btn{padding:.42rem .85rem;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:Arial,sans-serif}
+.btn.p{background:#085041;color:#fff}
+.btn.s{background:#e6f1fb;color:#0c447c;border:1px solid #378add}
+.btn.r{background:#fcebeb;color:#a32d2d;border:1px solid #e24b4a}
+/* SCORE FIN */
+.sfin{display:none;background:#fff;border:1px solid #ccc;border-radius:10px;padding:.85rem;margin-top:.5rem}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:.65rem 0}
+.sc{background:#f4f3ef;border-radius:7px;padding:.55rem .7rem}
+.sc .l{font-size:10px;color:#5f5e5a;margin-bottom:2px}
+.sc .v{font-size:19px;font-weight:700}
+/* LEXIQUE */
+.lex-card{background:#fff;border:1px solid #ccc;border-radius:9px;padding:.7rem;margin-bottom:7px}
+.lex-fr{font-size:14px;font-weight:700;margin-bottom:2px}
+.lex-ctx{font-size:10px;color:#5f5e5a;margin-bottom:.35rem}
+.lex-tr{font-size:13px;color:#1a3a5c;padding:.3rem .5rem;background:#e6f1fb;border-radius:5px;margin-bottom:.3rem}
+.lex-ex{font-size:11px;color:#5f5e5a;font-style:italic;margin-bottom:.35rem}
+.abtn{font-size:10px;padding:2px 8px;border-radius:99px;background:#e1f5ee;color:#085041;border:1px solid #1d9e75;cursor:pointer;margin-right:4px}
+/* RAPPELS */
+.freq-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:.75rem}
+.fc{border:1px solid #ccc;border-radius:7px;padding:.55rem;cursor:pointer;text-align:center;background:#f4f3ef}
+.fc.on{border-color:#1d9e75;background:#e1f5ee}
+.fc .ft{font-size:12px;font-weight:600}
+.fc .fs{font-size:10px;color:#5f5e5a}
+.plan-row{display:flex;align-items:center;gap:7px;margin-bottom:.35rem}
+.dp{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;min-width:54px;text-align:center}
+.dp.on{background:#085041;color:#fff}
+.dp.off{background:#f4f3ef;color:#b4b2a9}
+/* PROGRESSION */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:.75rem}
+.stat{background:#fff;border:1px solid #ccc;border-radius:7px;padding:.55rem .6rem}
+.stat .sl{font-size:10px;color:#5f5e5a;margin-bottom:2px}
+.stat .sv{font-size:18px;font-weight:700}
+.hist-t{width:100%;font-size:12px;border-collapse:collapse}
+.hist-t th{text-align:left;padding:.3rem .4rem;color:#5f5e5a;font-weight:500;border-bottom:1px solid #eee;font-size:10px}
+.hist-t td{padding:.3rem .4rem;border-bottom:1px solid #f0f0f0;color:#5f5e5a}
+footer{text-align:center;font-size:10px;color:#b4b2a9;margin-top:1rem;padding-top:.75rem;border-top:1px solid #ddd}
+</style>
+</head>
+<body>
+
+<!-- ÉCRAN MOT DE PASSE -->
+<div id="pwd-screen" style="position:fixed;inset:0;background:#085041;z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:14px;padding:2rem;max-width:360px;width:100%;text-align:center">
+    <div style="font-size:32px;margin-bottom:.5rem">🎤</div>
+    <h2 style="font-size:18px;font-weight:700;color:#085041;margin-bottom:.25rem">Simulateur EKITEE</h2>
+    <p style="font-size:12px;color:#5f5e5a;margin-bottom:1.25rem">Accès réservé — entrez le mot de passe</p>
+    <input type="password" id="pwd-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')verifierMdp()" style="width:100%;border:1px solid #ccc;border-radius:6px;padding:.55rem .75rem;font-size:15px;text-align:center;margin-bottom:.75rem;font-family:Arial,sans-serif">
+    <div id="pwd-error" style="color:#e24b4a;font-size:12px;margin-bottom:.5rem;display:none">Mot de passe incorrect.</div>
+    <button id="pwd-btn" onclick="verifierMdp()" style="width:100%;padding:.65rem;background:#085041;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif">Accéder au simulateur ↗</button>
+  </div>
+</div>
+
+<div class="wrap" id="main-wrap" style="display:none">
+
+<!-- MODALE PROFIL -->
+<div class="overlay" id="overlay" style="display:none">
+  <div class="modal">
+    <h2>🏆 Séance terminée !</h2>
+    <p>Entrez votre prénom pour que vos résultats soient enregistrés à votre nom.</p>
+    <label>Votre prénom *</label>
+    <input type="text" id="inp-prenom" placeholder="Entrez votre prénom" maxlength="40" onkeydown="if(event.key==='Enter')demarrer()">
+    <label>Votre langue maternelle</label>
+    <select id="inp-langue">
+      <option value="fr">🇫🇷 Français</option>
+      <option value="ar">🇸🇦 Arabe</option>
+      <option value="ro">🇷🇴 Roumain</option>
+      <option value="pt">🇵🇹 Portugais</option>
+      <option value="tr">🇹🇷 Turc</option>
+      <option value="vi">🇻🇳 Vietnamien</option>
+      <option value="pl">🇵🇱 Polonais</option>
+      <option value="es">🇪🇸 Espagnol</option>
+      <option value="en">🇬🇧 Anglais</option>
+      <option value="de">🇩🇪 Allemand</option>
+      <option value="it">🇮🇹 Italien</option>
+      <option value="fa">🇦🇫 Dari / Persan</option>
+      <option value="uk">🇺🇦 Ukrainien</option>
+      <option value="wo">🇸🇳 Wolof</option>
+      <option value="hi">🇮🇳 Hindi</option>
+    </select>
+    <button class="btn-start" id="btn-start" onclick="demarrer()">Sauvegarder mes résultats ↗</button>
+    <button onclick="document.getElementById('overlay').style.display='none'" style="width:100%;padding:.4rem;background:none;border:none;color:#b4b2a9;cursor:pointer;font-size:12px;margin-top:.25rem">Continuer sans sauvegarder</button>
+    <p class="note">Optionnel — vous pouvez aussi continuer sans sauvegarder.</p>
+  </div>
+</div>
+
+<!-- BARRE PROFIL -->
+<div class="profil-bar" id="profil-bar" style="display:none">
+  <span id="profil-nom" style="font-size:12px;color:#fff;flex:1"></span>
+  <button onclick="changerProfil()" style="font-size:11px;padding:3px 8px;border-radius:99px;background:#e1f5ee;color:#085041;border:none;cursor:pointer;margin-right:4px">✏️ Modifier</button>
+  <button onclick="deconnecter()" style="font-size:11px;padding:3px 8px;border-radius:99px;background:#fcebeb;color:#a32d2d;border:none;cursor:pointer">⏻ Déconnexion</button>
+</div>
+
+<div class="hdr">
+  <h1>🎤 Simulateur d'entretien EKITEE</h1>
+  <p>Entraînement vocal — 15 langues — Mode téléphonique</p>
+</div>
+
+<div class="tabs">
+  <button class="tab on" id="tab-sim" onclick="switchTab('sim',this)">🎤 Simulateur</button>
+  <button class="tab" id="tab-lex" onclick="switchTab('lex',this)">🌍 Lexique</button>
+  <button class="tab" id="tab-gram" onclick="switchTab('gram',this)">📖 Grammaire</button>
+  <button class="tab" id="tab-rap" onclick="switchTab('rap',this)">🔔 Rappels</button>
+  <button class="tab" id="tab-pro" onclick="switchTab('pro',this)">📊 Progression</button>
+</div>
+
+<!-- SIMULATEUR -->
+<div class="panel on" id="panel-sim">
+  <div class="cfg">
+    <div><label>Niveau</label>
+      <select id="sniv"><option value="deb">Débutant</option><option value="int" selected>Intermédiaire</option><option value="av">Avancé</option></select></div>
+    <div><label>Type d'entretien</label>
+      <select id="stype"><option value="phys" selected>Physique</option><option value="tel">Téléphonique</option></select></div>
+    <div><label>Poste</label>
+      <select id="sposte"><option value="textile" selected>Textile EKITEE</option><option value="gen">Emploi général</option></select></div>
+    <div><label>Vitesse voix</label>
+      <select id="sspeed" onchange="setVitesse(this.value)"><option value="0.7">Lente</option><option value="0.85" selected>Normale</option><option value="1.0">Rapide</option></select></div>
+  </div>
+  <div style="font-size:10px;color:#5f5e5a;margin-bottom:.35rem">Ma langue :</div>
+  <div class="lpills" id="lpills-sim"></div>
+  <div class="modes">
+    <button class="mb on" id="m-mix" onclick="setMode('mix',this)">📝 Oral+texte</button>
+    <button class="mb" id="m-oral" onclick="setMode('oral',this)">🎤 Oral seul</button>
+    <button class="mb" id="m-tel" onclick="setMode('tel',this)">📞 Téléphone</button>
+    <button class="mb" id="m-eco" onclick="setMode('eco',this)">👂 Écoute</button>
+  </div>
+  <div class="compat" id="compat"></div>
+  <div class="mic-row" id="mic-row">
+    <label>🎤 Micro :</label>
+    <select id="mic-sel" onchange="selMicId=this.value" style="max-width:200px;font-size:12px"></select>
+    <span id="mic-lvl" style="font-size:11px;color:#085041"></span>
+  </div>
+  <div class="prog">
+    <span id="plbl">Q 1/6</span>
+    <div class="pbar"><div class="pf" id="pf" style="width:16%"></div></div>
+    <span id="pscore">0/12</span>
+    <button class="btn-re" onclick="rejouer()">🔊</button>
+  </div>
+  <div class="tel" id="tel">
+    <div class="tel-sc">
+      <div class="tel-cl">Appel entrant</div>
+      <div class="tel-nm">EKITEE — Recrutement</div>
+      <div class="tel-st" id="tst">En communication…</div>
+      <div class="tel-wv" id="twv"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="tel-bt">
+      <button class="tbt mic" id="tmic" onclick="toggleMicTel()">🎤</button>
+      <button class="tbt end" onclick="finirAppel()">📵</button>
+    </div>
+  </div>
+  <div id="chat-wrap"><div class="chat" id="chat"></div></div>
+  <div class="fb" id="fb"><div class="fb-t" id="fbt"></div><div id="fbb"></div></div>
+  <span class="cs" id="cs"></span>
+  <div class="rz" id="rz">
+    <label><span>Votre réponse</span><span id="recst" style="color:#e24b4a;display:none">● Enreg…</span></label>
+    <div class="rd" id="rd" contenteditable="true"></div>
+    <div class="vrow">
+      <button class="bmic" id="bmic" onclick="toggleMic()">🎤 Parler</button>
+      <button class="btn p" onclick="valider()">Valider ↗</button>
+      <button class="btn s" onclick="effacer()">✕ Effacer</button>
+      <button class="btn r" onclick="aide()">❓ Aide</button>
+    </div>
+  </div>
+  <div class="sfin" id="sfin">
+    <strong style="font-size:14px">🏆 Entretien terminé</strong>
+    <div class="sg">
+      <div class="sc"><div class="l">Score</div><div class="v" id="fsc">0/12</div></div>
+      <div class="sc"><div class="l">Mention</div><div class="v" id="fme" style="font-size:13px">—</div></div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn p" onclick="restart()">↺ Recommencer</button>
+      <button class="btn s" onclick="ecouterBilan()">🔊 Bilan audio</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEXIQUE -->
+<div class="panel" id="panel-lex">
+  <p style="font-size:12px;color:#5f5e5a;margin-bottom:.6rem;background:#e1f5ee;border-radius:7px;padding:.5rem .75rem">🌍 Lexique complet FLE — 34 expressions — 15 langues avec audio</p>
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem">
+    <label style="font-size:10px;color:#5f5e5a">🔊 Vitesse d'écoute :</label>
+    <select id="sspeed-lex" onchange="setVitesse(this.value)" style="font-size:12px;border:1px solid #ccc;border-radius:5px;padding:.25rem .4rem">
+      <option value="0.7">Lente</option><option value="0.85" selected>Normale</option><option value="1.0">Rapide</option>
+    </select>
+  </div>
+  <div style="font-size:10px;color:#5f5e5a;margin-bottom:.25rem">Domaine :</div>
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.5rem" id="dom-pills"></div>
+  <div style="font-size:10px;color:#5f5e5a;margin-bottom:.25rem">Langue :</div>
+  <div class="lpills" id="lpills-lex"></div>
+  <div id="lex-grid"></div>
+</div>
+
+<!-- GRAMMAIRE -->
+<div class="panel" id="panel-gram">
+  <p style="font-size:12px;color:#5f5e5a;margin-bottom:.6rem;background:#e1f5ee;border-radius:7px;padding:.5rem .75rem">📖 Grammaire &amp; conjugaison FLE — Niveau A1 (Phase 1) — d'autres niveaux à venir</p>
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:.5rem">
+    <label style="font-size:10px;color:#5f5e5a">🔊 Vitesse d'écoute :</label>
+    <select id="sspeed-gram" onchange="setVitesse(this.value)" style="font-size:12px;border:1px solid #ccc;border-radius:5px;padding:.25rem .4rem">
+      <option value="0.7">Lente</option><option value="0.85" selected>Normale</option><option value="1.0">Rapide</option>
+    </select>
+  </div>
+  <div class="modes" style="margin-bottom:.5rem">
+    <button class="mb on" id="gm-regles" onclick="setGramMode('regles',this)">📖 Règles</button>
+    <button class="mb" id="gm-conj" onclick="setGramMode('conj',this)">🔤 Conjugaison</button>
+    <button class="mb" id="gm-exo" onclick="setGramMode('exo',this)">✏️ Exercices</button>
+  </div>
+
+  <div id="gram-regles-wrap">
+    <div style="font-size:10px;color:#5f5e5a;margin-bottom:.25rem">Niveau :</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.5rem" id="gramniv-pills"></div>
+    <div style="font-size:10px;color:#5f5e5a;margin-bottom:.25rem">Langue :</div>
+    <div class="lpills" id="lpills-gram"></div>
+    <div id="gram-grid"></div>
+  </div>
+
+  <div id="gram-conj-wrap" style="display:none">
+    <div style="font-size:10px;color:#5f5e5a;margin-bottom:.25rem">Temps :</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.5rem" id="temps-pills"></div>
+    <div style="font-size:10px;color:#5f5e5a;margin-bottom:.25rem">Verbe :</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.5rem" id="conj-pills"></div>
+    <div id="conj-table"></div>
+  </div>
+
+  <div id="gram-exo-wrap" style="display:none">
+    <p style="font-size:12px;color:#5f5e5a;margin-bottom:.6rem;background:#e1f5ee;border-radius:7px;padding:.5rem .75rem">✏️ Complétez la phrase à voix haute — le trou s'affiche, vous dites le mot manquant.</p>
+    <div id="exo-zone"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:.6rem">
+      <button class="btn s" onclick="exoPrecedent()">← Précédent</button>
+      <span id="exo-compteur" style="font-size:12px;color:#5f5e5a;align-self:center"></span>
+      <button class="btn p" onclick="exoSuivant()">Suivant →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RAPPELS -->
+<div class="panel" id="panel-rap">
+  <div style="background:#fff;border:1px solid #ccc;border-radius:9px;padding:.85rem;margin-bottom:.65rem">
+    <div style="font-size:13px;font-weight:700;margin-bottom:.65rem">📅 Fréquence d'entraînement</div>
+    <div class="freq-grid">
+      <div class="fc on" id="fc3" onclick="setFreq(3,this)"><div class="ft">3× / semaine</div><div class="fs">Lun · Mer · Ven</div></div>
+      <div class="fc" id="fc5" onclick="setFreq(5,this)"><div class="ft">5× / semaine</div><div class="fs">Lun au Ven</div></div>
+      <div class="fc" id="fc7" onclick="setFreq(7,this)"><div class="ft">Quotidien</div><div class="fs">Tous les jours</div></div>
+    </div>
+    <p style="font-size:11px;color:#5f5e5a">10-15 min/jour est plus efficace qu'une longue session hebdomadaire.</p>
+  </div>
+  <div style="background:#fff;border:1px solid #ccc;border-radius:9px;padding:.85rem;margin-bottom:.65rem">
+    <div style="font-size:13px;font-weight:700;margin-bottom:.65rem">📅 Mon prochain entraînement</div>
+    <div id="prochain-wrap" style="background:#e1f5ee;border-radius:8px;padding:.75rem;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:#085041" id="prochain-jour">—</div>
+      <div style="font-size:12px;color:#5f5e5a;margin-top:3px" id="prochain-date">Choisissez une fréquence ci-dessus</div>
+    </div>
+    <p style="font-size:11px;color:#5f5e5a;margin-top:.5rem">💡 Revenez vous entraîner ce jour-là pour progresser régulièrement.</p>
+  </div>
+  <div style="background:#fff;border:1px solid #ccc;border-radius:9px;padding:.85rem">
+    <div style="font-size:13px;font-weight:700;margin-bottom:.65rem">📋 Planning semaine</div>
+    <div id="plan-wrap"></div>
+  </div>
+</div>
+
+<!-- PROGRESSION -->
+<div class="panel" id="panel-pro">
+  <div class="stat-grid">
+    <div class="stat"><div class="sl">Séances</div><div class="sv" id="stsea">0</div></div>
+    <div class="stat"><div class="sl">Meilleur</div><div class="sv" id="stbst">—</div></div>
+    <div class="stat"><div class="sl">Moyen</div><div class="sv" id="stmoy">—</div></div>
+    <div class="stat"><div class="sl">Évolution</div><div class="sv" id="stpro">—</div></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;flex-wrap:wrap;gap:4px">
+    <span style="font-size:13px;font-weight:700">Historique</span>
+    <div style="display:flex;gap:4px">
+      <button class="btn s" onclick="exporterResultats()" style="font-size:10px;padding:2px 8px">📧 Envoyer au formateur</button>
+      <button class="btn r" onclick="clearHist()" style="font-size:10px;padding:2px 8px">Effacer</button>
+    </div>
+  </div>
+  <div id="hist-wrap" style="background:#fff;border:1px solid #ccc;border-radius:9px;padding:.75rem;font-size:12px;color:#5f5e5a;text-align:center">
+    Aucune séance — commencez votre premier entraînement !
+  </div>
+
+  <div style="margin-top:.75rem;background:#fff;border:1px solid #ccc;border-radius:9px;padding:.75rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;flex-wrap:wrap;gap:4px">
+      <span style="font-size:13px;font-weight:700">📖 Entraînement Grammaire &amp; Conjugaison</span>
+      <button class="btn r" onclick="clearTrainStats()" style="font-size:10px;padding:2px 8px">Effacer</button>
+    </div>
+    <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat"><div class="sl">Grammaire</div><div class="sv" id="sttgram">0</div></div>
+      <div class="stat"><div class="sl">Conjugaison</div><div class="sv" id="sttconj">0</div></div>
+      <div class="stat"><div class="sl">Exercices</div><div class="sv" id="sttexo">0</div></div>
+      <div class="stat"><div class="sl">Total</div><div class="sv" id="stttot">0</div></div>
+    </div>
+    <div id="train-detail-wrap" style="font-size:11px;color:#5f5e5a"></div>
+  </div>
+</div>
+
+<footer>EKITEE — Simulateur d'entretien v2.0 — Juillet 2026
+<br><button onclick="resetProfil()" style="font-size:10px;background:none;border:none;color:#b4b2a9;cursor:pointer;text-decoration:underline;margin-top:4px">↺ Changer d'apprenant</button>
+</footer>
+</div>
+
+<script>
+
+// ════════════════════════════════════
+// MOT DE PASSE
+// ════════════════════════════════════
+var PWD = "M@rousse";
+var debloque = false; // Simulateur bloqué jusqu'à validation du mot de passe
+
+// Précharger la synthèse vocale — DOIT être déclarée avant toute utilisation de "synth"
+// (correction d'un bug préexistant : "synth" était utilisé ligne suivante avant d'être assigné plus bas dans le fichier,
+// ce qui provoquait une erreur bloquant l'exécution de tout le reste du script, y compris le lexique et le quiz)
+var synth = window.speechSynthesis;
+
+// Précharger les voix dès le début
+if(synth && synth.onvoiceschanged !== undefined) {
+  synth.onvoiceschanged = function(){ synth.getVoices(); };
+}
+
+function verifierMdp() {
+  var val = document.getElementById('pwd-input').value;
+  if(val === PWD) {
+    debloque = true;
+    document.getElementById('pwd-screen').style.display='none';
+    document.getElementById('main-wrap').style.display='block';
+    setVitesse(vitesseEcoute);
+    initMicro();
+    renderPlanning();
+    showQ();
+    diagnostiquerCompatibiliteVocale();
+  } else {
+    document.getElementById('pwd-error').style.display='block';
+    document.getElementById('pwd-input').value='';
+    document.getElementById('pwd-input').focus();
+  }
+}
+
+// Boutons pwd attachés directement en HTML
+
+
+// ════════════════════════════════════
+// DONNÉES
+// ════════════════════════════════════
+var LANGS = {
+  fr:{n:'Français',f:'🇫🇷',d:'ltr',c:'fr-FR'},
+  ar:{n:'Arabe',f:'🇸🇦',d:'rtl',c:'ar-SA'},
+  ro:{n:'Roumain',f:'🇷🇴',d:'ltr',c:'ro-RO'},
+  pt:{n:'Portugais',f:'🇵🇹',d:'ltr',c:'pt-PT'},
+  tr:{n:'Turc',f:'🇹🇷',d:'ltr',c:'tr-TR'},
+  vi:{n:'Vietnamien',f:'🇻🇳',d:'ltr',c:'vi-VN'},
+  pl:{n:'Polonais',f:'🇵🇱',d:'ltr',c:'pl-PL'},
+  es:{n:'Espagnol',f:'🇪🇸',d:'ltr',c:'es-ES'},
+  en:{n:'Anglais',f:'🇬🇧',d:'ltr',c:'en-GB'},
+  de:{n:'Allemand',f:'🇩🇪',d:'ltr',c:'de-DE'},
+  it:{n:'Italien',f:'🇮🇹',d:'ltr',c:'it-IT'},
+  fa:{n:'Dari',f:'🇦🇫',d:'rtl',c:'fa-AF'},
+  uk:{n:'Ukrainien',f:'🇺🇦',d:'ltr',c:'uk-UA'},
+  wo:{n:'Wolof',f:'🇸🇳',d:'ltr',c:'fr-SN'},
+  hi:{n:'Hindi',f:'🇮🇳',d:'ltr',c:'hi-IN'}
+};
+
+var LEX_FULL = [
+
+
+{ d:"entretien", fr:"Bonjour, je m'appelle...", ctx:"Formule d'ouverture d'entretien",
+  ex:"Bonjour, je m'appelle Amira Benali. J'ai rendez-vous avec Madame Martin.",
+  t:{ ar:"مرحباً، اسمي...", ro:"Bună ziua, mă numesc...", pt:"Bom dia, chamo-me...", tr:"Merhaba, adım...",
+      vi:"Xin chào, tên tôi là...", pl:"Dzień dobry, nazywam się...", es:"Buenos días, me llamo...",
+      en:"Good morning, my name is...", de:"Guten Tag, ich heiße...", it:"Buongiorno, mi chiamo...",
+      fa:"سلام، اسمم... است", th:"สวัสดีครับ/ค่ะ ผม/ดิฉันชื่อ...", uk:"Доброго дня, мене звати...",
+      wo:"Mangi dem, tuddu naa...", hi:"नमस्ते, मेरा नाम... है", ja:"はじめまして、私の名前は...です" }},
+{ d:"entretien", fr:"Je suis très motivé(e) par ce poste", ctx:"Exprimer sa motivation",
+  ex:"Je suis très motivée car ce poste correspond à mon expérience en tri textile.",
+  t:{ ar:"أنا متحمس/ة جداً لهذا المنصب", ro:"Sunt foarte motivat(ă) pentru acest post",
+      pt:"Estou muito motivado/a para este cargo", tr:"Bu pozisyon için çok motiveyim",
+      vi:"Tôi rất có động lực với vị trí này", pl:"Jestem bardzo zmotywowany/a do tej pracy",
+      es:"Estoy muy motivado/a para este puesto", en:"I am very motivated for this position",
+      de:"Ich bin sehr motiviert für diese Stelle", it:"Sono molto motivato/a per questa posizione",
+      fa:"برای این شغل بسیار انگیزه دارم", th:"ฉันมีแรงบันดาลใจมากสำหรับตำแหน่งนี้",
+      uk:"Я дуже зацікавлений/а цією посадою", wo:"Dafa ma weex lool poostubii", hi:"मैं इस पद के लिए बहुत प्रेरित हूँ", ja:"この仕事にとても意欲的です" }},
+{ d:"entretien", fr:"Pouvez-vous répéter la question, s'il vous plaît ?", ctx:"Demander reformulation — A1 essentiel",
+  ex:"Pouvez-vous répéter la question ? Je voudrais bien comprendre avant de répondre.",
+  t:{ ar:"هل يمكنكم إعادة السؤال من فضلكم؟", ro:"Puteți repeta întrebarea, vă rog?",
+      pt:"Pode repetir a pergunta, por favor?", tr:"Soruyu tekrar edebilir misiniz?",
+      vi:"Bạn có thể nhắc lại câu hỏi không?", pl:"Czy może powtórzyć pytanie?",
+      es:"¿Puede repetir la pregunta, por favor?", en:"Could you repeat the question, please?",
+      de:"Könnten Sie die Frage bitte wiederholen?", it:"Potrebbe ripetere la domanda, per favore?",
+      fa:"لطفاً می‌توانید سؤال را تکرار کنید؟", th:"คุณช่วยพูดซ้ำได้ไหมครับ/ค่ะ?",
+      uk:"Чи не могли б ви повторити питання?", wo:"Mbëggël na ko wax ci kanam?", hi:"क्या आप प्रश्न दोहरा सकते हैं?", ja:"質問をもう一度繰り返してもらえますか？" }},
+{ d:"entretien", fr:"Mes principales qualités sont...", ctx:"Valoriser son profil",
+  ex:"Mes principales qualités sont la rigueur, l'adaptabilité et le sens du travail en équipe.",
+  t:{ ar:"أبرز صفاتي هي...", ro:"Calitățile mele principale sunt...",
+      pt:"As minhas principais qualidades são...", tr:"Başlıca özelliklerim şunlardır...",
+      vi:"Những phẩm chất chính của tôi là...", pl:"Moje główne zalety to...",
+      es:"Mis principales cualidades son...", en:"My main qualities are...",
+      de:"Meine wichtigsten Qualitäten sind...", it:"Le mie principali qualità sono...",
+      fa:"مهم‌ترین ویژگی‌های من عبارتند از...", th:"คุณสมบัติหลักของฉันคือ...",
+      uk:"Мої головні якості:", wo:"Jëfandikoo yi am naa...", hi:"मेरे मुख्य गुण हैं...", ja:"私の主な長所は..." }},
+{ d:"entretien", fr:"Je ne comprends pas ce mot — pouvez-vous expliquer ?", ctx:"Signaler incompréhension — clé A1",
+  ex:"Je ne comprends pas ce mot. Pouvez-vous l'expliquer autrement, avec un exemple ?",
+  t:{ ar:"لا أفهم هذه الكلمة — هل يمكنكم الشرح؟", ro:"Nu înțeleg acest cuvânt — puteți explica?",
+      pt:"Não percebo esta palavra — pode explicar?", tr:"Bu kelimeyi anlamıyorum — açıklar mısınız?",
+      vi:"Tôi không hiểu từ này — bạn có thể giải thích không?", pl:"Nie rozumiem tego słowa — może wyjaśnić?",
+      es:"No entiendo esta palabra — ¿puede explicar?", en:"I don't understand this word — can you explain?",
+      de:"Ich verstehe dieses Wort nicht — können Sie es erklären?", it:"Non capisco questa parola — può spiegare?",
+      fa:"این کلمه را نمی‌فهمم — می‌توانید توضیح دهید؟", th:"ฉันไม่เข้าใจคำนี้ — คุณอธิบายได้ไหม?",
+      uk:"Я не розумію це слово — можете пояснити?", wo:"Dëkk haul dégal bi — mën nga wax?", hi:"मैं यह शब्द नहीं समझता — क्या आप समझा सकते हैं?", ja:"この言葉がわかりません — 説明してもらえますか？" }},
+
+
+{ d:"atelier", fr:"Je dois trier ce lot selon le grade A/B/C/D", ctx:"Tri qualitatif REP TLC",
+  ex:"Je dois trier ce lot selon le grade — A pour la revente, D pour le recyclage fibre.",
+  t:{ ar:"يجب أن أصنّف هذه الدفعة حسب الدرجة", ro:"Trebuie să sortez lotul după grad",
+      pt:"Tenho de tricar este lote por grau", tr:"Bu partiyi A/B/C/D derecesine göre sınıflandırmalıyım",
+      vi:"Tôi cần phân loại lô này theo cấp A/B/C/D", pl:"Muszę posortować tę partię według klasy",
+      es:"Debo clasificar este lote según el grado", en:"I need to sort this batch by grade A/B/C/D",
+      de:"Ich muss diese Charge nach Klasse A/B/C/D sortieren", it:"Devo smistare questo lotto per grado A/B/C/D",
+      fa:"باید این دسته را بر اساس درجه مرتب کنم", th:"ฉันต้องจัดเรียงล็อตนี้ตามเกรด A/B/C/D",
+      uk:"Мені треба відсортувати цю партію за класом", wo:"Maye sortir lotuñu bii ci grade bi", hi:"मुझे इस बैच को ग्रेड A/B/C/D के अनुसार छाँटना है", ja:"このロットをグレードA/B/C/Dに仕分けする必要があります" }},
+{ d:"atelier", fr:"Cette matière est du coton / de la laine / de la soie", ctx:"Identification des fibres ISO 1007/2011",
+  ex:"Cette matière est du coton pur — je le vois sur l'étiquette : 100% CO.",
+  t:{ ar:"هذه المادة قطن / صوف / حرير", ro:"Materialul este bumbac / lână / mătase",
+      pt:"Este tecido é algodão / lã / seda", tr:"Bu malzeme pamuk / yün / ipek",
+      vi:"Chất liệu này là bông / len / lụa", pl:"Materiał to bawełna / wełna / jedwab",
+      es:"Este tejido es algodón / lana / seda", en:"This material is cotton / wool / silk",
+      de:"Dieses Material ist Baumwolle / Wolle / Seide", it:"Questo materiale è cotone / lana / seta",
+      fa:"این ماده پنبه / پشم / ابریشم است", th:"วัสดุนี้คือผ้าฝ้าย / ขนสัตว์ / ผ้าไหม",
+      uk:"Цей матеріал — бавовна / вовна / шовк", wo:"Xaalis bii dafa jëm ak coton / layne / soie",
+      hi:"यह सामग्री कपास / ऊन / रेशम है", ja:"この素材は綿 / ウール / シルクです" }},
+{ d:"atelier", fr:"Je lis les symboles d'entretien sur l'étiquette", ctx:"Symboles ISO 3758:2023",
+  ex:"Je lis les symboles d'entretien — ce vêtement se lave à 30°C programme délicat.",
+  t:{ ar:"أقرأ رموز العناية على البطاقة", ro:"Citesc simbolurile de întreținere de pe etichetă",
+      pt:"Leio os símbolos de cuidado na etiqueta", tr:"Etiketteki bakım sembollerini okuyorum",
+      vi:"Tôi đọc biểu tượng hướng dẫn bảo quản trên nhãn", pl:"Czytam symbole pielęgnacji na etykiecie",
+      es:"Leo los símbolos de cuidado en la etiqueta", en:"I read the care symbols on the label",
+      de:"Ich lese die Pflegesymbole auf dem Etikett", it:"Leggo i simboli di cura sull'etichetta",
+      fa:"نمادهای نگهداری روی برچسب را می‌خوانم", th:"ฉันอ่านสัญลักษณ์การดูแลบนป้ายกำกับ",
+      uk:"Я читаю символи догляду на бирці", wo:"Xam xam yi am ci étiquette bi",
+      hi:"मैं लेबल पर देखभाल के प्रतीक पढ़ता/पढ़ती हूँ", ja:"ラベルのケアシンボルを読んでいます" }},
+{ d:"atelier", fr:"La machine ne fonctionne pas — je préviens", ctx:"Signaler un problème atelier",
+  ex:"La machine overlock ne fonctionne pas — je préviens le responsable immédiatement.",
+  t:{ ar:"الآلة لا تعمل — سأُبلغ المسؤول", ro:"Mașina nu funcționează — anunț responsabilul",
+      pt:"A máquina não funciona — vou avisar", tr:"Makine çalışmıyor — sorumluya haber veriyorum",
+      vi:"Máy không hoạt động — tôi sẽ báo cáo", pl:"Maszyna nie działa — informuję kierownika",
+      es:"La máquina no funciona — aviso al responsable", en:"The machine is broken — I am reporting it",
+      de:"Die Maschine funktioniert nicht — ich melde es", it:"La macchina non funziona — avviso il responsabile",
+      fa:"دستگاه کار نمی‌کند — خبر می‌دهم", th:"เครื่องจักรไม่ทำงาน — ฉันจะแจ้ง",
+      uk:"Машина не працює — я повідомлю", wo:"Masiin bi dafay tàng — dinaa wax",
+      hi:"मशीन काम नहीं कर रही — मैं सूचित करूँगा/करूँगी", ja:"機械が動いていません — 担当者に報告します" }},
+
+
+{ d:"vente", fr:"Votre commande a bien été reçue", ctx:"Confirmation commande Payhip",
+  ex:"Bonjour, votre commande a bien été reçue. Téléchargez votre fichier ici : [lien]",
+  t:{ ar:"تم استلام طلبكم بنجاح", ro:"Comanda dvs. a fost primită cu succes",
+      pt:"A sua encomenda foi recebida com sucesso", tr:"Siparişiniz başarıyla alındı",
+      vi:"Đơn hàng của bạn đã được nhận thành công", pl:"Zamówienie odebrane pomyślnie",
+      es:"Su pedido ha sido recibido correctamente", en:"Your order has been received successfully",
+      de:"Ihre Bestellung wurde erfolgreich erhalten", it:"Il Suo ordine è stato ricevuto con successo",
+      fa:"سفارش شما با موفقیت دریافت شد", th:"คำสั่งซื้อของคุณได้รับเรียบร้อยแล้ว",
+      uk:"Ваше замовлення успішно отримано", wo:"Commande bi dafa dem ak yaram",
+      hi:"आपका ऑर्डर सफलतापूर्वक प्राप्त हो गया है", ja:"ご注文を正常に受け付けました" }},
+{ d:"vente", fr:"Vous pouvez retourner l'article sous 14 jours", ctx:"Droit de rétractation légal",
+  ex:"Vous pouvez retourner l'article sous 14 jours sans justification — c'est votre droit légal.",
+  t:{ ar:"يمكنكم إعادة المنتج خلال 14 يوماً", ro:"Puteți returna articolul în 14 zile",
+      pt:"Pode devolver o artigo em 14 dias", tr:"Ürünü 14 gün içinde iade edebilirsiniz",
+      vi:"Bạn có thể trả lại sản phẩm trong 14 ngày", pl:"Możesz zwrócić artykuł w 14 dni",
+      es:"Puede devolver el artículo en 14 días", en:"You can return the item within 14 days",
+      de:"Sie können den Artikel innerhalb von 14 Tagen zurückgeben", it:"Può restituire l'articolo entro 14 giorni",
+      fa:"می‌توانید کالا را ظرف ۱۴ روز برگردانید", th:"คุณสามารถคืนสินค้าภายใน 14 วัน",
+      uk:"Ви можете повернути товар протягом 14 днів", wo:"Mën nga jël produii bi ci 14 bés",
+      hi:"आप 14 दिनों के भीतर वस्तु वापस कर सकते हैं", ja:"14日以内に商品を返品できます" }},
+{ d:"vente", fr:"Les frais de livraison sont inclus dans le prix", ctx:"Tarification transparente",
+  ex:"Les frais de livraison sont inclus dans le prix pour toute commande supérieure à 30 €.",
+  t:{ ar:"تكاليف الشحن مشمولة في السعر", ro:"Costurile de livrare sunt incluse în preț",
+      pt:"Os custos de envio estão incluídos no preço", tr:"Kargo ücretleri fiyata dahildir",
+      vi:"Chi phí vận chuyển đã bao gồm trong giá", pl:"Koszty wysyłki są wliczone w cenę",
+      es:"Los gastos de envío están incluidos en el precio", en:"Shipping costs are included in the price",
+      de:"Die Versandkosten sind im Preis inbegriffen", it:"Le spese di spedizione sono incluse nel prezzo",
+      fa:"هزینه ارسال در قیمت گنجانده شده است", th:"ค่าจัดส่งรวมอยู่ในราคาแล้ว",
+      uk:"Вартість доставки включена в ціну", wo:"Frais de livraison yi dafa xool ci prix bi",
+      hi:"शिपिंग खर्च कीमत में शामिल है", ja:"送料は価格に含まれています" }},
+
+
+{ d:"client", fr:"Comment puis-je vous aider ?", ctx:"Formule d'accueil universelle",
+  ex:"Bonjour, comment puis-je vous aider ? Vous avez une question sur votre commande ?",
+  t:{ ar:"كيف يمكنني مساعدتكم؟", ro:"Cum vă pot ajuta?",
+      pt:"Como posso ajudá-lo/a?", tr:"Size nasıl yardımcı olabilirim?",
+      vi:"Tôi có thể giúp gì cho bạn?", pl:"Jak mogę Panu/Pani pomóc?",
+      es:"¿En qué puedo ayudarle?", en:"How can I help you?",
+      de:"Wie kann ich Ihnen helfen?", it:"Come posso aiutarla?",
+      fa:"چطور می‌توانم کمک کنم؟", th:"ฉันจะช่วยคุณได้อย่างไร?",
+      uk:"Чим я можу вам допомогти?", wo:"Naka mën naa def ci yëgël bi?",
+      hi:"मैं आपकी कैसे मदद कर सकता/सकती हूँ?", ja:"何かお手伝いできますか？" }},
+{ d:"client", fr:"Je comprends votre problème — je vais trouver une solution", ctx:"Empathie et gestion de réclamation",
+  ex:"Je comprends votre problème — le colis n'est pas arrivé. Je contacte le transporteur.",
+  t:{ ar:"أتفهم مشكلتكم — سأجد حلاً", ro:"Înțeleg problema — voi găsi o soluție",
+      pt:"Compreendo o problema — vou encontrar solução", tr:"Sorununuzu anlıyorum — çözüm bulacağım",
+      vi:"Tôi hiểu vấn đề của bạn — tôi sẽ tìm giải pháp", pl:"Rozumiem problem — znajdę rozwiązanie",
+      es:"Entiendo su problema — voy a encontrar una solución", en:"I understand — I will find a solution",
+      de:"Ich verstehe Ihr Problem — ich werde eine Lösung finden", it:"Capisco il problema — troverò una soluzione",
+      fa:"مشکل شما را می‌فهمم — راه‌حلی پیدا می‌کنم", th:"ฉันเข้าใจปัญหาของคุณ — ฉันจะหาทางแก้ไข",
+      uk:"Я розумію вашу проблему — знайду рішення", wo:"Dëgg naa ci xelam bi — dinaa gëm solution",
+      hi:"मैं आपकी समस्या समझता/समझती हूँ — मैं समाधान खोजूँगा/खोजूँगी", ja:"ご状況は理解しています — 解決策を探します" }},
+
+
+{ d:"reunion", fr:"Pouvez-vous parler plus lentement ?", ctx:"Demande fondamentale A1 en réunion",
+  ex:"Pouvez-vous parler plus lentement, s'il vous plaît ? Je veux bien comprendre.",
+  t:{ ar:"هل يمكنكم التحدث بشكل أبطأ؟", ro:"Puteți vorbi mai rar, vă rog?",
+      pt:"Pode falar mais devagar, por favor?", tr:"Daha yavaş konuşabilir misiniz?",
+      vi:"Bạn có thể nói chậm hơn không?", pl:"Czy może Pan/Pani mówić wolniej?",
+      es:"¿Puede hablar más despacio, por favor?", en:"Could you speak more slowly, please?",
+      de:"Könnten Sie bitte langsamer sprechen?", it:"Potrebbe parlare più lentamente, per favore?",
+      fa:"لطفاً می‌توانید آهسته‌تر صحبت کنید؟", th:"คุณช่วยพูดช้าๆ ได้ไหมครับ/ค่ะ?",
+      uk:"Чи могли б ви говорити повільніше?", wo:"Mën nga wax sax sax?",
+      hi:"क्या आप धीरे बोल सकते हैं?", ja:"もう少しゆっくり話していただけますか？" }},
+{ d:"reunion", fr:"Je suis d'accord / Je ne suis pas d'accord", ctx:"Prendre position en réunion",
+  ex:"Je suis d'accord avec la proposition — commençons par les articles Grade A.",
+  t:{ ar:"أوافق / لا أوافق", ro:"Sunt de acord / Nu sunt de acord",
+      pt:"Concordo / Não concordo", tr:"Katılıyorum / Katılmıyorum",
+      vi:"Tôi đồng ý / Tôi không đồng ý", pl:"Zgadzam się / Nie zgadzam się",
+      es:"Estoy de acuerdo / No estoy de acuerdo", en:"I agree / I disagree",
+      de:"Ich bin einverstanden / Ich bin nicht einverstanden", it:"Sono d'accordo / Non sono d'accordo",
+      fa:"موافقم / مخالفم", th:"ฉันเห็นด้วย / ฉันไม่เห็นด้วย",
+      uk:"Я згоден/згодна / Я не згоден/не згодна", wo:"Mangi soxor / Mangi mujj",
+      hi:"मैं सहमत हूँ / मैं सहमत नहीं हूँ", ja:"同意します / 同意しません" }},
+
+
+{ d:"securite", fr:"Attention ! Il y a un danger", ctx:"Alerte urgente à l'atelier",
+  ex:"Attention ! Il y a un danger — une caisse est tombée près de la sortie.",
+  t:{ ar:"انتبه! هناك خطر", ro:"Atenție! Există un pericol",
+      pt:"Atenção! Há um perigo", tr:"Dikkat! Tehlike var",
+      vi:"Chú ý! Có nguy hiểm", pl:"Uwaga! Jest niebezpieczeństwo",
+      es:"¡Atención! Hay un peligro", en:"Attention! There is a danger",
+      de:"Achtung! Es gibt eine Gefahr", it:"Attenzione! C'è un pericolo",
+      fa:"توجه! خطری وجود دارد", th:"ระวัง! มีอันตราย",
+      uk:"Обережно! Є небезпека", wo:"Fatte ak! Dafa dëdd",
+      hi:"ध्यान दें! खतरा है", ja:"注意！危険があります" }},
+{ d:"securite", fr:"Je dois porter les équipements de protection", ctx:"EPI obligatoires ACI",
+  ex:"Je dois porter les gants et le masque pour le tri des articles de collecte.",
+  t:{ ar:"يجب أن أرتدي معدات الحماية", ro:"Trebuie să port echipamentele de protecție",
+      pt:"Devo usar os equipamentos de proteção", tr:"Koruyucu ekipmanları giymeliyim",
+      vi:"Tôi phải mang thiết bị bảo hộ", pl:"Muszę nosić środki ochrony osobistej",
+      es:"Debo usar los equipos de protección", en:"I must wear the protective equipment",
+      de:"Ich muss die Schutzausrüstung tragen", it:"Devo indossare i dispositivi di protezione",
+      fa:"باید تجهیزات محافظ بپوشم", th:"ฉันต้องสวมอุปกรณ์ป้องกัน",
+      uk:"Я повинен/повинна носити захисне спорядження", wo:"Waral naa enfiler équipements yi",
+      hi:"मुझे सुरक्षा उपकरण पहनने होंगे", ja:"保護具を着用しなければなりません" }},
+
+
+{ d:"numerique", fr:"Comment allumer / éteindre l'ordinateur ?", ctx:"Base numérique — PIX domaine 5",
+  ex:"Comment allumer l'ordinateur ? Je ne trouve pas le bouton marche/arrêt.",
+  t:{ ar:"كيف أشغّل / أوقف الحاسوب؟", ro:"Cum pornesc / opresc calculatorul?",
+      pt:"Como ligar / desligar o computador?", tr:"Bilgisayarı nasıl açarım / kapatırım?",
+      vi:"Làm thế nào để bật / tắt máy tính?", pl:"Jak włączyć / wyłączyć komputer?",
+      es:"¿Cómo encender / apagar el ordenador?", en:"How do I turn the computer on / off?",
+      de:"Wie schalte ich den Computer ein / aus?", it:"Come si accende / spegne il computer?",
+      fa:"چگونه کامپیوتر را روشن / خاموش کنم؟", th:"ฉันจะเปิด/ปิดคอมพิวเตอร์อย่างไร?",
+      uk:"Як увімкнути / вимкнути комп'ютер?", wo:"Naka mën naa allumer / éteindre ordinateur bi?",
+      hi:"कंप्यूटर कैसे चालू/बंद करें?", ja:"パソコンの電源を入れる/切る方法は？" }},
+{ d:"numerique", fr:"Comment envoyer un e-mail avec une pièce jointe ?", ctx:"Messagerie — PIX domaine 2",
+  ex:"Comment envoyer un e-mail avec une pièce jointe ? Je veux envoyer la fiche de traçabilité.",
+  t:{ ar:"كيف أرسل بريداً إلكترونياً بمرفق؟", ro:"Cum trimit un e-mail cu atașament?",
+      pt:"Como enviar um e-mail com anexo?", tr:"Ekli e-posta nasıl gönderirim?",
+      vi:"Làm thế nào để gửi email có tệp đính kèm?", pl:"Jak wysłać e-mail z załącznikiem?",
+      es:"¿Cómo enviar un correo con archivo adjunto?", en:"How do I send an email with an attachment?",
+      de:"Wie sende ich eine E-Mail mit Anhang?", it:"Come si invia un'e-mail con allegato?",
+      fa:"چطور ایمیل با پیوست بفرستم؟", th:"ฉันจะส่งอีเมลพร้อมไฟล์แนบได้อย่างไร?",
+      uk:"Як надіслати електронний лист із вкладенням?", wo:"Naka mën naa daan email ak fichier?",
+      hi:"अटैचमेंट के साथ ईमेल कैसे भेजें?", ja:"添付ファイル付きのメールを送る方法は？" }},
+{ d:"numerique", fr:"Je sauvegarde mon fichier sur Google Drive", ctx:"Stockage cloud — PIX domaine 3",
+  ex:"Je sauvegarde mon fichier sur Google Drive pour ne pas le perdre.",
+  t:{ ar:"أحفظ ملفي على Google Drive", ro:"Salvez fișierul pe Google Drive",
+      pt:"Guardo o meu ficheiro no Google Drive", tr:"Dosyamı Google Drive'a kaydediyorum",
+      vi:"Tôi lưu tệp lên Google Drive", pl:"Zapisuję plik na Google Drive",
+      es:"Guardo mi archivo en Google Drive", en:"I save my file on Google Drive",
+      de:"Ich speichere meine Datei auf Google Drive", it:"Salvo il mio file su Google Drive",
+      fa:"فایلم را در Google Drive ذخیره می‌کنم", th:"ฉันบันทึกไฟล์ของฉันใน Google Drive",
+      uk:"Я зберігаю файл на Google Drive", wo:"Dëgg naa sauvegarder fichier bi ci Google Drive",
+      hi:"मैं अपनी फ़ाइल Google Drive पर सहेजता/सहेजती हूँ", ja:"Google Driveにファイルを保存します" }},
+{ d:"numerique", fr:"Mon mot de passe est incorrect — comment le réinitialiser ?", ctx:"Sécurité numérique — PIX domaine 4",
+  ex:"Mon mot de passe est incorrect. Comment le réinitialiser sur Payhip ?",
+  t:{ ar:"كلمة المرور غير صحيحة — كيف أعيد تعيينها؟", ro:"Parola mea este greșită — cum o resetez?",
+      pt:"A minha senha está incorreta — como a repor?", tr:"Şifrem yanlış — nasıl sıfırlarım?",
+      vi:"Mật khẩu của tôi sai — làm thế nào để đặt lại?", pl:"Moje hasło jest nieprawidłowe — jak je zresetować?",
+      es:"Mi contraseña es incorrecta — ¿cómo la reseteo?", en:"My password is wrong — how do I reset it?",
+      de:"Mein Passwort ist falsch — wie setze ich es zurück?", it:"La mia password è sbagliata — come la reimposto?",
+      fa:"رمز عبورم نادرست است — چطور آن را بازنشانی کنم؟", th:"รหัสผ่านของฉันไม่ถูกต้อง — จะรีเซ็ตอย่างไร?",
+      uk:"Мій пароль неправильний — як його скинути?", wo:"Mot de passe bi dafay faw — naka mën naa ko reset?",
+      hi:"मेरा पासवर्ड गलत है — इसे कैसे रीसेट करें?", ja:"パスワードが違います — リセットする方法は？" }},
+
+
+{ d:"formation", fr:"Je prépare la certification PIX", ctx:"Préparation certification numérique officielle",
+  ex:"Je prépare la certification PIX sur pix.fr — je travaille les domaines 1 et 2.",
+  t:{ ar:"أتحضّر لشهادة PIX الرقمية", ro:"Mă pregătesc pentru certificarea PIX",
+      pt:"Estou a preparar a certificação PIX", tr:"PIX sertifikasına hazırlanıyorum",
+      vi:"Tôi đang chuẩn bị chứng chỉ PIX", pl:"Przygotowuję się do certyfikacji PIX",
+      es:"Me preparo para la certificación PIX", en:"I am preparing for the PIX certification",
+      de:"Ich bereite mich auf die PIX-Zertifizierung vor", it:"Mi sto preparando per la certificazione PIX",
+      fa:"دارم برای گواهینامه PIX آماده می‌شوم", th:"ฉันกำลังเตรียมตัวสำหรับใบรับรอง PIX",
+      uk:"Я готуюся до сертифікації PIX", wo:"Daje naa ci certification PIX",
+      hi:"मैं PIX प्रमाणन की तैयारी कर रहा/रही हूँ", ja:"PIX認定の準備をしています" }},
+{ d:"formation", fr:"Je travaille sur mon portfolio d'apprentissage", ctx:"Suivi de progression — dossier ACI",
+  ex:"Je travaille sur mon portfolio — j'y ajoute mes fiches de traçabilité et mes CV.",
+  t:{ ar:"أعمل على ملفي التعليمي", ro:"Lucrez la portofoliul meu de învățare",
+      pt:"Estou a trabalhar no meu portfólio de aprendizagem", tr:"Öğrenme portfolyom üzerinde çalışıyorum",
+      vi:"Tôi đang làm hồ sơ học tập của mình", pl:"Pracuję nad moim portfolio nauki",
+      es:"Estoy trabajando en mi portfolio de aprendizaje", en:"I am working on my learning portfolio",
+      de:"Ich arbeite an meinem Lernportfolio", it:"Sto lavorando al mio portfolio di apprendimento",
+      fa:"دارم روی پوشه یادگیری‌ام کار می‌کنم", th:"ฉันกำลังทำแฟ้มสะสมผลงาน",
+      uk:"Я працюю над своїм навчальним портфоліо", wo:"Daje naa ci portfolio bi",
+      hi:"मैं अपने सीखने के पोर्टफोलियो पर काम कर रहा/रही हूँ", ja:"学習ポートフォリオに取り組んでいます" }},
+{ d:"formation", fr:"J'ai obtenu mon attestation de formation", ctx:"Valider et célébrer une réussite",
+  ex:"J'ai obtenu mon attestation de formation FLE — je suis fier/fière de mes progrès.",
+  t:{ ar:"حصلت على شهادة التدريب", ro:"Am obținut atestatul de formare",
+      pt:"Obtive o meu certificado de formação", tr:"Eğitim belgemi aldım",
+      vi:"Tôi đã nhận được chứng chỉ đào tạo", pl:"Uzyskałem/am zaświadczenie o szkoleniu",
+      es:"He obtenido mi certificado de formación", en:"I have obtained my training certificate",
+      de:"Ich habe mein Ausbildungszertifikat erhalten", it:"Ho ottenuto il mio attestato di formazione",
+      fa:"گواهینامه آموزشی‌ام را دریافت کردم", th:"ฉันได้รับใบรับรองการฝึกอบรมแล้ว",
+      uk:"Я отримав/отримала свідоцтво про навчання", wo:"Am naa attestation formation bi",
+      hi:"मुझे अपना प्रशिक्षण प्रमाण पत्र मिल गया है", ja:"研修証明書を取得しました" }},
+{ d:"formation", fr:"Quel est l'objectif de cette formation ?", ctx:"Comprendre le programme — A1/A2",
+  ex:"Quel est l'objectif de cette formation ? Je veux savoir ce que je vais apprendre.",
+  t:{ ar:"ما هو هدف هذه التدريب؟", ro:"Care este obiectivul acestei formări?",
+      pt:"Qual é o objetivo desta formação?", tr:"Bu eğitimin amacı nedir?",
+      vi:"Mục tiêu của khóa học này là gì?", pl:"Jaki jest cel tego szkolenia?",
+      es:"¿Cuál es el objetivo de esta formación?", en:"What is the objective of this training?",
+      de:"Was ist das Ziel dieser Ausbildung?", it:"Qual è l'obiettivo di questa formazione?",
+      fa:"هدف این آموزش چیست؟", th:"จุดประสงค์ของการฝึกอบรมนี้คืออะไร?",
+      uk:"Яка мета цього навчання?", wo:"Ana xëy formation bii?",
+      hi:"इस प्रशिक्षण का उद्देश्य क्या है?", ja:"この研修の目的は何ですか？" }},
+
+
+{ d:"dpp", fr:"Qu'est-ce que le Passeport Numérique du Produit ?", ctx:"DPP — ESPR 2027 vulgarisé",
+  ex:"Le DPP est une carte d'identité numérique pour chaque produit textile — obligatoire dès 2027.",
+  t:{ ar:"ما هو جواز السفر الرقمي للمنتج؟", ro:"Ce este Pașaportul Digital al Produsului?",
+      pt:"O que é o Passaporte Digital do Produto?", tr:"Dijital Ürün Pasaportu nedir?",
+      vi:"Hộ chiếu kỹ thuật số sản phẩm là gì?", pl:"Co to jest Cyfrowy Paszport Produktu?",
+      es:"¿Qué es el Pasaporte Digital del Producto?", en:"What is the Digital Product Passport?",
+      de:"Was ist der digitale Produktpass?", it:"Cos'è il Passaporto Digitale del Prodotto?",
+      fa:"گذرنامه دیجیتال محصول چیست؟", th:"หนังสือเดินทางดิจิทัลของผลิตภัณฑ์คืออะไร?",
+      uk:"Що таке цифровий паспорт продукту?", wo:"Ana DPP — Passeport Numérique bi?",
+      hi:"डिजिटल उत्पाद पासपोर्ट क्या है?", ja:"デジタル製品パスポートとは何ですか？" }},
+{ d:"dpp", fr:"Ce produit contient des fibres recyclées", ctx:"Étiquetage Green Claims — allégation vérifiable",
+  ex:"Ce produit contient 60% de fibres recyclées post-consommation — origine traçable sur Refashion.",
+  t:{ ar:"هذا المنتج يحتوي على ألياف معادة التدوير", ro:"Acest produs conține fibre reciclate",
+      pt:"Este produto contém fibras recicladas", tr:"Bu ürün geri dönüştürülmüş elyaf içeriyor",
+      vi:"Sản phẩm này chứa sợi tái chế", pl:"Ten produkt zawiera włókna z recyklingu",
+      es:"Este producto contiene fibras recicladas", en:"This product contains recycled fibres",
+      de:"Dieses Produkt enthält recycelte Fasern", it:"Questo prodotto contiene fibre riciclate",
+      fa:"این محصول حاوی الیاف بازیافتی است", th:"ผลิตภัณฑ์นี้มีเส้นใยรีไซเคิล",
+      uk:"Цей продукт містить перероблені волокна", wo:"Produii bii am na fibre recyclée",
+      hi:"इस उत्पाद में पुनर्नवीनीकरण फाइबर हैं", ja:"この製品にはリサイクル繊維が含まれています" }},
+{ d:"dpp", fr:"Scannez le QR code pour voir les informations du produit", ctx:"Interface DPP consommateur",
+  ex:"Scannez le QR code pour voir la composition, l'entretien et la filière de recyclage de cet article.",
+  t:{ ar:"امسح رمز QR لرؤية معلومات المنتج", ro:"Scanați codul QR pentru informații despre produs",
+      pt:"Leia o QR code para ver as informações do produto", tr:"Ürün bilgilerini görmek için QR kodu tarayın",
+      vi:"Quét mã QR để xem thông tin sản phẩm", pl:"Zeskanuj kod QR, aby zobaczyć informacje o produkcie",
+      es:"Escanee el código QR para ver la información del producto", en:"Scan the QR code to see the product information",
+      de:"Scannen Sie den QR-Code für Produktinformationen", it:"Scansioni il codice QR per le informazioni sul prodotto",
+      fa:"برای مشاهده اطلاعات محصول QR را اسکن کنید", th:"สแกนคิวอาร์โค้ดเพื่อดูข้อมูลผลิตภัณฑ์",
+      uk:"Відскануйте QR-код для перегляду інформації про товар", wo:"Scan QR code bi pour xam xam ci produii bi",
+      hi:"उत्पाद जानकारी देखने के लिए QR कोड स्कैन करें", ja:"製品情報を見るためにQRコードをスキャンしてください" }},
+
+
+{ d:"etudes", fr:"Je voudrais reprendre mes études", ctx:"Exprimer un projet de formation",
+  ex:"Je voudrais reprendre mes études pour obtenir un CAP Métiers de la Mode.",
+  t:{ ar:"أودّ استئناف دراستي", ro:"Aș dori să îmi reiau studiile",
+      pt:"Gostaria de retomar os meus estudos", tr:"Öğrenimime devam etmek istiyorum",
+      vi:"Tôi muốn tiếp tục học", pl:"Chciałbym/Chciałabym wznowić naukę",
+      es:"Me gustaría retomar mis estudios", en:"I would like to go back to studying",
+      de:"Ich möchte mein Studium wieder aufnehmen", it:"Vorrei riprendere gli studi",
+      fa:"می‌خواهم تحصیلم را از سر بگیرم", th:"ฉันอยากกลับไปเรียนต่อ",
+      uk:"Я хотів/хотіла б продовжити навчання", wo:"Bëgg naa des ci école bi",
+      hi:"मैं अपनी पढ़ाई फिर से शुरू करना चाहता/चाहती हूँ", ja:"また勉強を再開したいです" }},
+{ d:"etudes", fr:"J'ai besoin d'aide pour réviser les mathématiques", ctx:"Soutien scolaire niveau collège/lycée",
+  ex:"J'ai besoin d'aide pour réviser les mathématiques — les pourcentages et les fractions.",
+  t:{ ar:"أحتاج إلى مساعدة في مراجعة الرياضيات", ro:"Am nevoie de ajutor pentru a revizui matematica",
+      pt:"Preciso de ajuda para rever a matemática", tr:"Matematik tekrarı için yardıma ihtiyacım var",
+      vi:"Tôi cần giúp đỡ để ôn tập toán học", pl:"Potrzebuję pomocy w powtarzaniu matematyki",
+      es:"Necesito ayuda para repasar las matemáticas", en:"I need help to revise mathematics",
+      de:"Ich brauche Hilfe beim Wiederholen von Mathematik", it:"Ho bisogno di aiuto per ripassare matematica",
+      fa:"برای مرور ریاضیات به کمک نیاز دارم", th:"ฉันต้องการความช่วยเหลือในการทบทวนวิชาคณิตศาสตร์",
+      uk:"Мені потрібна допомога з повторенням математики", wo:"Bëgg naa ndimbal ci math yi",
+      hi:"मुझे गणित की पुनरावृत्ति में मदद चाहिए", ja:"数学の復習に助けが必要です" }},
+{ d:"etudes", fr:"Quelles sont les démarches pour valider mon expérience (VAE) ?", ctx:"Validation des Acquis — CPF éligible",
+  ex:"J'ai 5 ans d'expérience en couture — quelles sont les démarches pour valider avec une VAE ?",
+  t:{ ar:"ما هي إجراءات تقييم تجربتي المهنية؟", ro:"Care sunt demersurile pentru a valida experiența mea?",
+      pt:"Quais são os passos para validar a minha experiência profissional?", tr:"Deneyimimi doğrulamak için adımlar nelerdir?",
+      vi:"Các bước để xác nhận kinh nghiệm nghề nghiệp là gì?", pl:"Jakie są kroki do walidacji mojego doświadczenia?",
+      es:"¿Cuáles son los pasos para validar mi experiencia profesional?", en:"What are the steps to validate my professional experience?",
+      de:"Was sind die Schritte zur Anerkennung meiner Berufserfahrung?", it:"Quali sono i passi per validare la mia esperienza professionale?",
+      fa:"مراحل تأیید تجربه حرفه‌ای‌ام چیست؟", th:"ขั้นตอนในการรับรองประสบการณ์วิชาชีพของฉันคืออะไร?",
+      uk:"Які кроки для підтвердження мого досвіду роботи?", wo:"Ana yëgël yu waroon naa dox ci VAE bi?",
+      hi:"मेरे व्यावसायिक अनुभव को मान्य करने के लिए क्या कदम हैं?", ja:"職業経験を認定するための手順は何ですか？" }},
+
+
+{ d:"admin", fr:"J'ai besoin de mon attestation de travail", ctx:"Document RH courant",
+  ex:"J'ai besoin de mon attestation de travail pour mon rendez-vous à la Préfecture.",
+  t:{ ar:"أحتاج إلى شهادة عمل", ro:"Am nevoie de adeverința de muncă",
+      pt:"Preciso do meu certificado de trabalho", tr:"Çalışma belgeme ihtiyacım var",
+      vi:"Tôi cần giấy xác nhận lao động", pl:"Potrzebuję zaświadczenia o zatrudnieniu",
+      es:"Necesito mi certificado de trabajo", en:"I need my employment certificate",
+      de:"Ich brauche meine Arbeitsbescheinigung", it:"Ho bisogno del mio attestato di lavoro",
+      fa:"به گواهی کار خود نیاز دارم", th:"ฉันต้องการใบรับรองการทำงาน",
+      uk:"Мені потрібна довідка про роботу", wo:"Bëgg naa attestation travail bi",
+      hi:"मुझे अपने कार्य प्रमाण पत्र की आवश्यकता है", ja:"雇用証明書が必要です" }},
+{ d:"admin", fr:"Mon contrat se termine dans... mois", ctx:"Fin de CDDI — transition professionnelle",
+  ex:"Mon contrat se termine dans 3 mois — j'ai commencé mes recherches d'emploi.",
+  t:{ ar:"عقدي ينتهي بعد... أشهر", ro:"Contractul meu se termină în... luni",
+      pt:"O meu contrato termina daqui a... meses", tr:"Sözleşmem ... ay içinde bitiyor",
+      vi:"Hợp đồng của tôi kết thúc trong... tháng", pl:"Moja umowa kończy się za... miesiące",
+      es:"Mi contrato termina en... meses", en:"My contract ends in... months",
+      de:"Mein Vertrag läuft in ... Monaten aus", it:"Il mio contratto scade tra ... mesi",
+      fa:"قراردادم در ... ماه دیگر به پایان می‌رسد", th:"สัญญาของฉันสิ้นสุดในอีก... เดือน",
+      uk:"Мій контракт закінчується через... місяців", wo:"Contrat bi dina jeex ci... weer",
+      hi:"मेरा अनुबंध... महीनों में समाप्त होता है", ja:"私の契約は...ヶ月後に終わります" }},
+{ d:"absences", fr:"Je voudrais demander un rendez-vous médical pendant mes heures de travail", ctx:"Demande d'absence pour RDV médical — droit à demander, pas à se justifier en détail",
+  ex:"Je voudrais demander un rendez-vous médical pendant mes heures de travail, jeudi après-midi.",
+  t:{ ar:"أود طلب موعد طبي خلال ساعات عملي", ro:"Aș dori să cer o programare medicală în timpul orelor de lucru",
+      pt:"Gostaria de pedir uma consulta médica durante o meu horário de trabalho", tr:"Çalışma saatlerim içinde bir doktor randevusu talep etmek istiyorum",
+      vi:"Tôi muốn xin phép đi khám bệnh trong giờ làm việc", pl:"Chciałbym/Chciałabym poprosić o wizytę lekarską w godzinach pracy",
+      es:"Quisiera pedir una cita médica durante mi horario de trabajo", en:"I would like to request a medical appointment during my working hours",
+      de:"Ich möchte einen Arzttermin während meiner Arbeitszeit beantragen", it:"Vorrei chiedere un appuntamento medico durante il mio orario di lavoro",
+      fa:"می‌خواهم در ساعات کاری‌ام درخواست نوبت پزشکی بدهم", th:"ฉันอยากขอนัดหมายแพทย์ในช่วงเวลาทำงาน",
+      uk:"Я хотів(ла) би попросити медичний прийом протягом робочого часу", wo:"Bëgg naa laaj ab rendez-vous doktoor ci diggante ligeey bi",
+      hi:"मैं अपने कार्य समय के दौरान एक चिकित्सा अपॉइंटमेंट का अनुरोध करना चाहूंगा/चाहूंगी", ja:"勤務時間中に病院の予約を取りたいのですが" }},
+{ d:"absences", fr:"Mon enfant est malade, je dois m'absenter aujourd'hui", ctx:"Absence pour enfant malade — informer rapidement l'employeur",
+  ex:"Mon enfant est malade, je dois m'absenter aujourd'hui — je vous envoie le certificat médical dès que possible.",
+  t:{ ar:"طفلي مريض، يجب أن أتغيب اليوم", ro:"Copilul meu este bolnav, trebuie să lipsesc azi",
+      pt:"O meu filho está doente, preciso faltar hoje", tr:"Çocuğum hasta, bugün işe gelemeyeceğim",
+      vi:"Con tôi bị ốm, tôi phải nghỉ hôm nay", pl:"Moje dziecko jest chore, muszę być dziś nieobecny/a",
+      es:"Mi hijo/a está enfermo/a, tengo que faltar hoy", en:"My child is sick, I need to be absent today",
+      de:"Mein Kind ist krank, ich muss heute fehlen", it:"Mio figlio/a è malato/a, devo assentarmi oggi",
+      fa:"فرزندم بیمار است، باید امروز غیبت کنم", th:"ลูกของฉันป่วย ฉันต้องขาดงานวันนี้",
+      uk:"Моя дитина хвора, мені потрібно бути відсутнім(ньою) сьогодні", wo:"Sama xale feebar na, war naa wéy tey",
+      hi:"मेरा बच्चा बीमार है, मुझे आज अनुपस्थित रहना होगा", ja:"子供が病気なので、今日は休まなければなりません" }},
+{ d:"absences", fr:"Ai-je droit à des congés payés cette année ?", ctx:"Comprendre ses droits — 2,5 jours acquis par mois travaillé",
+  ex:"Ai-je droit à des congés payés cette année ? Je voudrais connaître le nombre de jours disponibles.",
+  t:{ ar:"هل لي الحق في إجازة مدفوعة الأجر هذا العام؟", ro:"Am dreptul la concediu plătit anul acesta?",
+      pt:"Tenho direito a férias pagas este ano?", tr:"Bu yıl ücretli izin hakkım var mı?",
+      vi:"Tôi có quyền nghỉ phép có lương năm nay không?", pl:"Czy mam prawo do płatnego urlopu w tym roku?",
+      es:"¿Tengo derecho a vacaciones pagadas este año?", en:"Am I entitled to paid leave this year?",
+      de:"Habe ich dieses Jahr Anspruch auf bezahlten Urlaub?", it:"Ho diritto alle ferie retribuite quest'anno?",
+      fa:"آیا امسال حق مرخصی با حقوق دارم؟", th:"ปีนี้ฉันมีสิทธิ์ลาพักร้อนแบบได้รับค่าจ้างหรือไม่",
+      uk:"Чи маю я право на оплачувану відпустку цього року?", wo:"Ndax am naa droit ci congé payé ci at mii?",
+      hi:"क्या इस साल मुझे सवेतन अवकाश का अधिकार है?", ja:"今年、有給休暇を取る権利はありますか？" }},
+{ d:"absences", fr:"Comment faire une demande de congé à l'avance ?", ctx:"Procédure de demande de congé — anticipation recommandée",
+  ex:"Comment faire une demande de congé à l'avance ? Je voudrais poser une semaine en juillet.",
+  t:{ ar:"كيف أقدم طلب إجازة مسبقًا؟", ro:"Cum fac o cerere de concediu în avans?",
+      pt:"Como faço um pedido de férias com antecedência?", tr:"Önceden nasıl izin talebinde bulunabilirim?",
+      vi:"Làm thế nào để xin nghỉ phép trước?", pl:"Jak złożyć wniosek urlopowy z wyprzedzeniem?",
+      es:"¿Cómo hago una solicitud de vacaciones con antelación?", en:"How do I request leave in advance?",
+      de:"Wie stelle ich einen Urlaubsantrag im Voraus?", it:"Come faccio a richiedere ferie in anticipo?",
+      fa:"چگونه از قبل درخواست مرخصی بدهم؟", th:"ฉันจะขอลาล่วงหน้าได้อย่างไร",
+      uk:"Як подати заяву на відпустку заздалегідь?", wo:"Naka laa mën a laaj congé bu jiitu?",
+      hi:"मैं पहले से छुट्टी का अनुरोध कैसे करूं?", ja:"事前に休暇を申請するにはどうすればよいですか？" }},
+{ d:"absences", fr:"J'ai un arrêt de travail de mon médecin", ctx:"Transmettre un arrêt maladie — délai légal de 48h pour informer l'employeur",
+  ex:"J'ai un arrêt de travail de mon médecin pour 5 jours — je vous l'envoie aujourd'hui.",
+  t:{ ar:"لدي شهادة توقف عن العمل من طبيبي", ro:"Am un concediu medical de la doctorul meu",
+      pt:"Tenho um atestado médico de baixa do meu médico", tr:"Doktorumdan iş göremezlik raporum var",
+      vi:"Tôi có giấy nghỉ ốm từ bác sĩ", pl:"Mam zwolnienie lekarskie od mojego lekarza",
+      es:"Tengo un parte de baja médica de mi médico", en:"I have a sick note from my doctor",
+      de:"Ich habe eine Krankschreibung von meinem Arzt", it:"Ho un certificato di malattia dal mio medico",
+      fa:"از پزشکم گواهی استعلاجی دارم", th:"ฉันมีใบรับรองแพทย์ให้หยุดงานจากแพทย์ของฉัน",
+      uk:"У мене є лікарняний від лікаря", wo:"Am naa arrêt bu doktoor bi may",
+      hi:"मेरे डॉक्टर से मेरे पास एक बीमारी की छुट्टी का प्रमाण पत्र है", ja:"医師から診断書（休業証明）をもらいました" }},
+{ d:"absences", fr:"Puis-je poser un jour de congé pour un événement familial ?", ctx:"Congés exceptionnels pour événements familiaux (mariage, naissance, décès)",
+  ex:"Puis-je poser un jour de congé pour un événement familial ? Mon frère se marie samedi.",
+  t:{ ar:"هل يمكنني أخذ يوم إجازة لمناسبة عائلية؟", ro:"Pot să iau o zi liberă pentru un eveniment de familie?",
+      pt:"Posso tirar um dia de folga para um evento familiar?", tr:"Bir aile etkinliği için izin günü alabilir miyim?",
+      vi:"Tôi có thể xin nghỉ một ngày vì việc gia đình không?", pl:"Czy mogę wziąć dzień wolny z powodu wydarzenia rodzinnego?",
+      es:"¿Puedo tomar un día libre por un evento familiar?", en:"Can I take a day off for a family event?",
+      de:"Kann ich für ein Familienereignis einen freien Tag nehmen?", it:"Posso prendere un giorno libero per un evento familiare?",
+      fa:"آیا می‌توانم برای یک رویداد خانوادگی یک روز مرخصی بگیرم؟", th:"ฉันสามารถลาหยุดหนึ่งวันสำหรับงานครอบครัวได้ไหม",
+      uk:"Чи можу я взяти вихідний день через сімейну подію?", wo:"Mën naa jël benn bes congé ngir ab wéy famille?",
+      hi:"क्या मैं पारिवारिक कार्यक्रम के लिए एक दिन की छुट्टी ले सकता/सकती हूं?", ja:"家族の行事のために1日休みを取ることはできますか？" }},
+];;
+
+
+// ════════════════════════════════════
+// GRAMMAIRE & CONJUGAISON — PHASE 1 (Niveau A1)
+// Contenu à valider par un formateur FLE avant déploiement définitif,
+// notamment les traductions dans les langues les moins courantes.
+// ════════════════════════════════════
+var GRAM_FULL = [
+{ niveau:"A1", d:"presentind", titre:"Le présent de l'indicatif (verbes en -ER)",
+  regle:"Pour les verbes réguliers en -ER, on enlève -ER et on ajoute : -e, -es, -e, -ons, -ez, -ent.",
+  exemples:["Je travaille à l'atelier.","Tu tries les vêtements.","Nous vérifions la qualité du tissu."],
+  exTr:{ ar:"أنا أعمل في الورشة.", ro:"Lucrez la atelier.", pt:"Eu trabalho na oficina.", tr:"Atölyede çalışıyorum.", vi:"Tôi làm việc tại xưởng.", pl:"Pracuję w warsztacie.", es:"Trabajo en el taller.", en:"I work at the workshop.", de:"Ich arbeite in der Werkstatt.", it:"Lavoro in laboratorio.", fa:"من در کارگاه کار می‌کنم.", uk:"Я працюю в майстерні.", wo:"Dama liggéey ci atelier bi.", hi:"मैं कार्यशाला में काम करता/करती हूं।" },
+  t:{ ar:"للأفعال المنتظمة في -ER: نحذف -ER ونضيف -e, -es, -e, -ons, -ez, -ent.",
+      ro:"Pentru verbele regulate în -ER: eliminăm -ER și adăugăm -e, -es, -e, -ons, -ez, -ent.",
+      pt:"Para os verbos regulares em -ER: retiramos -ER e acrescentamos -e, -es, -e, -ons, -ez, -ent.",
+      tr:"-ER ile biten düzenli fiillerde -ER kaldırılır ve -e, -es, -e, -ons, -ez, -ent eklenir.",
+      vi:"Với động từ đều tận cùng -ER: bỏ -ER và thêm -e, -es, -e, -ons, -ez, -ent.",
+      pl:"Dla regularnych czasowników na -ER: usuwamy -ER i dodajemy -e, -es, -e, -ons, -ez, -ent.",
+      es:"Para los verbos regulares en -ER: quitamos -ER y añadimos -e, -es, -e, -ons, -ez, -ent.",
+      en:"For regular -ER verbs: remove -ER and add -e, -es, -e, -ons, -ez, -ent.",
+      de:"Bei regelmäßigen Verben auf -ER: -ER entfernen und -e, -es, -e, -ons, -ez, -ent anhängen.",
+      it:"Per i verbi regolari in -ER: si toglie -ER e si aggiunge -e, -es, -e, -ons, -ez, -ent.",
+      fa:"برای افعال باقاعده با پایان -ER: -ER را حذف کرده و -e, -es, -e, -ons, -ez, -ent اضافه کنید.",
+      uk:"Для правильних дієслів на -ER: прибираємо -ER і додаємо -e, -es, -e, -ons, -ez, -ent.",
+      wo:"Ci verbe yu regulier ci -ER: dañu ko def -ER te dolli -e, -es, -e, -ons, -ez, -ent.",
+      hi:"-ER में समाप्त होने वाली नियमित क्रियाओं के लिए: -ER हटाएं और -e, -es, -e, -ons, -ez, -ent जोड़ें।" }},
+{ niveau:"A1", d:"articles", titre:"Les articles définis et indéfinis",
+  regle:"Défini (le/la/les) = chose connue ou précise. Indéfini (un/une/des) = chose non précisée.",
+  exemples:["Le tissu est rouge.","J'ai trouvé un pantalon.","Les machines sont neuves."],
+  exTr:{ ar:"القماش أحمر.", ro:"Materialul este roșu.", pt:"O tecido é vermelho.", tr:"Kumaş kırmızı.", vi:"Vải màu đỏ.", pl:"Tkanina jest czerwona.", es:"La tela es roja.", en:"The fabric is red.", de:"Der Stoff ist rot.", it:"Il tessuto è rosso.", fa:"پارچه قرمز است.", uk:"Тканина червона.", wo:"Tissu bi mel na xonq.", hi:"कपड़ा लाल है।" },
+  t:{ ar:"المعرّف (le/la/les) = شيء معروف. النكرة (un/une/des) = شيء غير محدد.",
+      ro:"Articolul hotărât (le/la/les) = lucru cunoscut. Nehotărât (un/une/des) = lucru neprecizat.",
+      pt:"Definido (le/la/les) = coisa conhecida. Indefinido (un/une/des) = coisa não precisada.",
+      tr:"Belirli tanımlık (le/la/les) = bilinen şey. Belirsiz tanımlık (un/une/des) = belirsiz şey.",
+      vi:"Mạo từ xác định (le/la/les) = vật đã biết. Mạo từ bất định (un/une/des) = vật chưa xác định.",
+      pl:"Rodzajnik określony (le/la/les) = rzecz znana. Nieokreślony (un/une/des) = rzecz nieprecyzyjna.",
+      es:"Definido (le/la/les) = cosa conocida. Indefinido (un/une/des) = cosa no precisada.",
+      en:"Definite (le/la/les) = known thing. Indefinite (un/une/des) = unspecified thing.",
+      de:"Bestimmter Artikel (le/la/les) = bekannte Sache. Unbestimmter (un/une/des) = unbestimmte Sache.",
+      it:"Determinativo (le/la/les) = cosa conosciuta. Indeterminativo (un/une/des) = cosa non precisata.",
+      fa:"معرفه (le/la/les) = چیز شناخته‌شده. نکره (un/une/des) = چیز نامشخص.",
+      uk:"Означений артикль (le/la/les) = відома річ. Неозначений (un/une/des) = неуточнена річ.",
+      wo:"Article bu wóor (le/la/les) = lu xam nañu ko. Bu wóorul (un/une/des) = lu wóoruwul.",
+      hi:"निश्चित (le/la/les) = ज्ञात वस्तु। अनिश्चित (un/une/des) = अनिर्दिष्ट वस्तु।" }},
+{ niveau:"A1", d:"genre", titre:"Le masculin et le féminin",
+  regle:"Chaque nom a un genre à retenir (le tissu = masculin, la machine = féminin). L'adjectif s'accorde souvent avec un -e au féminin.",
+  exemples:["Le pantalon est grand.","La veste est grande.","Un opérateur motivé, une opératrice motivée."],
+  exTr:{ ar:"البنطال كبير.", ro:"Pantalonul este mare.", pt:"A calça é grande.", tr:"Pantolon büyük.", vi:"Chiếc quần lớn.", pl:"Spodnie są duże.", es:"El pantalón es grande.", en:"The trousers are big.", de:"Die Hose ist groß.", it:"I pantaloni sono grandi.", fa:"شلوار بزرگ است.", uk:"Штани великі.", wo:"Pantalon bi rey na.", hi:"पतलून बड़ी है।" },
+  t:{ ar:"لكل اسم جنس يجب حفظه. الصفة غالباً تُطابق بإضافة -e للمؤنث.",
+      ro:"Fiecare substantiv are un gen de reținut. Adjectivul se acordă adesea cu -e la feminin.",
+      pt:"Cada substantivo tem um género a memorizar. O adjetivo concorda geralmente com -e no feminino.",
+      tr:"Her ismin ezberlenmesi gereken bir cinsiyeti vardır. Sıfat çoğunlukla dişilde -e ile uyumlanır.",
+      vi:"Mỗi danh từ có một giống cần nhớ. Tính từ thường thêm -e ở giống cái.",
+      pl:"Każdy rzeczownik ma rodzaj do zapamiętania. Przymiotnik zwykle zgadza się przez -e w rodzaju żeńskim.",
+      es:"Cada sustantivo tiene un género que memorizar. El adjetivo suele concordar con -e en femenino.",
+      en:"Every noun has a gender to remember. The adjective often agrees with -e in the feminine.",
+      de:"Jedes Substantiv hat ein zu merkendes Geschlecht. Das Adjektiv stimmt im Femininum oft mit -e überein.",
+      it:"Ogni nome ha un genere da ricordare. L'aggettivo spesso concorda con -e al femminile.",
+      fa:"هر اسم جنسیتی دارد که باید به خاطر بسپارید. صفت اغلب با افزودن -e در حالت مؤنث مطابقت می‌کند.",
+      uk:"Кожен іменник має рід, який слід запам'ятати. Прикметник часто узгоджується через -e в жіночому роді.",
+      wo:"Tur bu nekk am na genre wu war a fàttaliku. Adjectif bi dañu koy dëppale ak -e ci jigéen.",
+      hi:"हर संज्ञा का एक लिंग होता है जिसे याद रखना चाहिए। विशेषण अक्सर स्त्रीलिंग में -e के साथ मेल खाता है।" }},
+{ niveau:"A1", d:"negation", titre:"La négation simple (ne...pas)",
+  regle:"On place « ne » avant le verbe et « pas » après le verbe pour dire non.",
+  exemples:["Je ne comprends pas.","Il ne travaille pas aujourd'hui.","Nous n'avons pas fini."],
+  exTr:{ ar:"أنا لا أفهم.", ro:"Nu înțeleg.", pt:"Não percebo.", tr:"Anlamıyorum.", vi:"Tôi không hiểu.", pl:"Nie rozumiem.", es:"No entiendo.", en:"I don't understand.", de:"Ich verstehe nicht.", it:"Non capisco.", fa:"من نمی‌فهمم.", uk:"Я не розумію.", wo:"Xamuma.", hi:"मुझे समझ नहीं आता।" },
+  t:{ ar:"نضع «ne» قبل الفعل و«pas» بعده للنفي.",
+      ro:"Se pune „ne” înaintea verbului și „pas” după verb pentru a nega.",
+      pt:"Coloca-se «ne» antes do verbo e «pas» depois do verbo para negar.",
+      tr:"Olumsuzluk için fiilden önce «ne», fiilden sonra «pas» konur.",
+      vi:"Đặt «ne» trước động từ và «pas» sau động từ để phủ định.",
+      pl:"Aby zaprzeczyć, stawiamy „ne” przed czasownikiem i „pas” po czasowniku.",
+      es:"Se coloca «ne» antes del verbo y «pas» después del verbo para negar.",
+      en:"Place « ne » before the verb and « pas » after the verb to say no.",
+      de:"Man setzt „ne“ vor das Verb und „pas“ nach das Verb, um zu verneinen.",
+      it:"Si mette «ne» prima del verbo e «pas» dopo il verbo per negare.",
+      fa:"برای منفی کردن، «ne» را قبل از فعل و «pas» را بعد از فعل قرار دهید.",
+      uk:"Щоб заперечити, ставимо «ne» перед дієсловом і «pas» після дієслова.",
+      wo:"Wax «ne» virement bu verbe bi te «pas» ci ginnaaw verbe bi ngir wax déet.",
+      hi:"नकारने के लिए क्रिया से पहले «ne» और क्रिया के बाद «pas» लगाएं।" }},
+{ niveau:"A2", d:"passecompose", titre:"Le passé composé",
+  regle:"Se forme avec avoir ou être (au présent) + participe passé. Sert à parler d'une action terminée.",
+  exemples:["J'ai travaillé hier.","Elle est allée à l'atelier.","Nous avons vérifié le tissu."],
+  exTr:{ ar:"عملت أمس.", ro:"Am lucrat ieri.", pt:"Trabalhei ontem.", tr:"Dün çalıştım.", vi:"Hôm qua tôi đã làm việc.", pl:"Wczoraj pracowałem/pracowałam.", es:"Trabajé ayer.", en:"I worked yesterday.", de:"Ich habe gestern gearbeitet.", it:"Ho lavorato ieri.", fa:"دیروز کار کردم.", uk:"Я вчора працював(ла).", wo:"Liggéey naa démb.", hi:"मैंने कल काम किया।" },
+  t:{ ar:"يُصاغ بـ avoir أو être في المضارع + الفاعل الماضي. يُستخدم للحديث عن فعل منتهٍ.",
+      ro:"Se formează cu avoir sau être (la prezent) + participiul trecut. Exprimă o acțiune terminată.",
+      pt:"Forma-se com avoir ou être (no presente) + particípio passado. Serve para falar de uma ação terminada.",
+      tr:"Şimdiki zamanda avoir veya être + geçmiş zaman ortacı ile oluşur. Tamamlanmış bir eylemi anlatır.",
+      vi:"Được tạo bởi avoir hoặc être (ở hiện tại) + phân từ quá khứ. Dùng để nói về hành động đã kết thúc.",
+      pl:"Tworzy się z avoir lub être (w czasie teraźniejszym) + imiesłów bierny. Wyraża zakończoną czynność.",
+      es:"Se forma con avoir o être (en presente) + participio pasado. Sirve para hablar de una acción terminada.",
+      en:"Formed with avoir or être (present tense) + past participle. Used for a completed action.",
+      de:"Wird mit avoir oder être (im Präsens) + Partizip Perfekt gebildet. Drückt eine abgeschlossene Handlung aus.",
+      it:"Si forma con avoir o être (al presente) + participio passato. Serve per un'azione conclusa.",
+      fa:"با avoir یا être (زمان حال) + اسم مفعول ساخته می‌شود. برای بیان کاری که تمام شده به کار می‌رود.",
+      uk:"Утворюється з avoir або être (теперішній час) + дієприкметник минулого часу. Виражає завершену дію.",
+      wo:"Dañu ko def ak avoir mba être (ci léegi) + participe passé. Day wax lu jeex.",
+      hi:"avoir या être (वर्तमान काल) + भूत कृदंत से बनता है। एक समाप्त क्रिया के बारे में बताने के लिए।" }},
+{ niveau:"A2", d:"imparfait", titre:"L'imparfait",
+  regle:"Radical de « nous » au présent + terminaisons -ais, -ais, -ait, -ions, -iez, -aient. Décrit une habitude ou une situation passée.",
+  exemples:["Je travaillais tous les jours.","Il cousait des vestes.","Nous triions le matin."],
+  exTr:{ ar:"كنت أعمل كل يوم.", ro:"Lucram în fiecare zi.", pt:"Eu trabalhava todos os dias.", tr:"Her gün çalışıyordum.", vi:"Tôi từng làm việc mỗi ngày.", pl:"Pracowałem/Pracowałam codziennie.", es:"Trabajaba todos los días.", en:"I used to work every day.", de:"Ich arbeitete jeden Tag.", it:"Lavoravo ogni giorno.", fa:"من هر روز کار می‌کردم.", uk:"Я працював(ла) щодня.", wo:"Liggéeyoon naa bés bu nekk.", hi:"मैं हर दिन काम करता/करती था/थी।" },
+  t:{ ar:"جذع «nous» في المضارع + نهايات -ais, -ais, -ait, -ions, -iez, -aient. يصف عادة أو وضعاً ماضياً.",
+      ro:"Radicalul lui „nous” la prezent + terminațiile -ais, -ais, -ait, -ions, -iez, -aient. Descrie un obicei trecut.",
+      pt:"Radical de «nous» no presente + terminações -ais, -ais, -ait, -ions, -iez, -aient. Descreve um hábito passado.",
+      tr:"Şimdiki zamanda «nous» kökü + -ais, -ais, -ait, -ions, -iez, -aient ekleri. Geçmişteki bir alışkanlığı anlatır.",
+      vi:"Gốc của «nous» ở hiện tại + đuôi -ais, -ais, -ait, -ions, -iez, -aient. Mô tả thói quen trong quá khứ.",
+      pl:"Temat „nous” w czasie teraźniejszym + końcówki -ais, -ais, -ait, -ions, -iez, -aient. Opisuje dawny nawyk.",
+      es:"Radical de «nous» en presente + terminaciones -ais, -ais, -ait, -ions, -iez, -aient. Describe un hábito pasado.",
+      en:"Stem of the « nous » present form + endings -ais, -ais, -ait, -ions, -iez, -aient. Describes a past habit.",
+      de:"Stamm von „nous“ im Präsens + Endungen -ais, -ais, -ait, -ions, -iez, -aient. Beschreibt eine vergangene Gewohnheit.",
+      it:"Radice di «nous» al presente + desinenze -ais, -ais, -ait, -ions, -iez, -aient. Descrive un'abitudine passata.",
+      fa:"ریشه «nous» در زمان حال + پسوندهای -ais, -ais, -ait, -ions, -iez, -aient. یک عادت گذشته را توصیف می‌کند.",
+      uk:"Основа «nous» у теперішньому часі + закінчення -ais, -ais, -ait, -ions, -iez, -aient. Описує звичку в минулому.",
+      wo:"Racine bu «nous» ci léegi + terminaison -ais, -ais, -ait, -ions, -iez, -aient. Day wax jëf bu yàgg.",
+      hi:"वर्तमान काल में «nous» की जड़ + -ais, -ais, -ait, -ions, -iez, -aient प्रत्यय। एक पिछली आदत का वर्णन करता है।" }},
+{ niveau:"B1", d:"futur", titre:"Le futur simple",
+  regle:"Infinitif (ou radical irrégulier) + terminaisons -ai, -as, -a, -ons, -ez, -ont.",
+  exemples:["Je travaillerai demain.","Nous vérifierons la qualité.","Elle ira à l'atelier."],
+  exTr:{ ar:"سأعمل غدًا.", ro:"Voi lucra mâine.", pt:"Vou trabalhar amanhã.", tr:"Yarın çalışacağım.", vi:"Ngày mai tôi sẽ làm việc.", pl:"Będę pracować jutro.", es:"Trabajaré mañana.", en:"I will work tomorrow.", de:"Ich werde morgen arbeiten.", it:"Lavorerò domani.", fa:"فردا کار خواهم کرد.", uk:"Я працюватиму завтра.", wo:"Dinaa liggéey ëllëg.", hi:"मैं कल काम करूंगा/करूंगी।" },
+  t:{ ar:"المصدر (أو جذع غير منتظم) + نهايات -ai, -as, -a, -ons, -ez, -ont.",
+      ro:"Infinitivul (sau un radical neregulat) + terminațiile -ai, -as, -a, -ons, -ez, -ont.",
+      pt:"Infinitivo (ou radical irregular) + terminações -ai, -as, -a, -ons, -ez, -ont.",
+      tr:"Mastar (veya düzensiz kök) + -ai, -as, -a, -ons, -ez, -ont ekleri.",
+      vi:"Nguyên mẫu (hoặc gốc bất quy tắc) + đuôi -ai, -as, -a, -ons, -ez, -ont.",
+      pl:"Bezokolicznik (lub nieregularny temat) + końcówki -ai, -as, -a, -ons, -ez, -ont.",
+      es:"Infinitivo (o radical irregular) + terminaciones -ai, -as, -a, -ons, -ez, -ont.",
+      en:"Infinitive (or irregular stem) + endings -ai, -as, -a, -ons, -ez, -ont.",
+      de:"Infinitiv (oder unregelmäßiger Stamm) + Endungen -ai, -as, -a, -ons, -ez, -ont.",
+      it:"Infinito (o radice irregolare) + desinenze -ai, -as, -a, -ons, -ez, -ont.",
+      fa:"مصدر (یا ریشه بی‌قاعده) + پسوندهای -ai, -as, -a, -ons, -ez, -ont.",
+      uk:"Інфінітив (або неправильна основа) + закінчення -ai, -as, -a, -ons, -ez, -ont.",
+      wo:"Infinitif (mba racine bu jaaxal) + terminaison -ai, -as, -a, -ons, -ez, -ont.",
+      hi:"इनफिनिटिव (या अनियमित जड़) + -ai, -as, -a, -ons, -ez, -ont प्रत्यय।" }},
+{ niveau:"B1", d:"conditionnel", titre:"Le conditionnel présent",
+  regle:"Radical du futur + terminaisons de l'imparfait (-ais, -ais, -ait, -ions, -iez, -aient). Exprime la politesse, un souhait ou une hypothèse.",
+  exemples:["Je voudrais un rendez-vous.","Pourriez-vous répéter ?","Nous aimerions visiter l'atelier."],
+  exTr:{ ar:"أود موعدًا.", ro:"Aș dori o programare.", pt:"Gostaria de uma consulta.", tr:"Bir randevu istiyorum.", vi:"Tôi muốn một cuộc hẹn.", pl:"Chciałbym/Chciałabym umówić się na wizytę.", es:"Quisiera una cita.", en:"I would like an appointment.", de:"Ich hätte gerne einen Termin.", it:"Vorrei un appuntamento.", fa:"می‌خواهم یک قرار ملاقات داشته باشم.", uk:"Я хотів(ла) би записатися на прийом.", wo:"Bëgg naa am rendez-vous.", hi:"मुझे एक अपॉइंटमेंट चाहिए।" },
+  t:{ ar:"جذع المستقبل + نهايات الماضي الناقص. يعبّر عن الأدب أو الرغبة أو الفرضية.",
+      ro:"Radicalul viitorului + terminațiile imperfectului. Exprimă politețea, o dorință sau o ipoteză.",
+      pt:"Radical do futuro + terminações do imperfeito. Exprime cortesia, um desejo ou uma hipótese.",
+      tr:"Gelecek zaman kökü + di'li geçmiş ekleri. Nezaket, dilek veya varsayım ifade eder.",
+      vi:"Gốc của thì tương lai + đuôi của thì chưa hoàn thành. Diễn tả sự lịch sự, mong muốn hoặc giả thuyết.",
+      pl:"Temat czasu przyszłego + końcówki niedokonanego. Wyraża grzeczność, życzenie lub hipotezę.",
+      es:"Radical del futuro + terminaciones del imperfecto. Expresa cortesía, un deseo o una hipótesis.",
+      en:"Future stem + imperfect endings. Expresses politeness, a wish, or a hypothesis.",
+      de:"Stamm des Futurs + Endungen des Imparfait. Drückt Höflichkeit, einen Wunsch oder eine Hypothese aus.",
+      it:"Radice del futuro + desinenze dell'imperfetto. Esprime cortesia, un desiderio o un'ipotesi.",
+      fa:"ریشه زمان آینده + پسوندهای ماضی استمراری. برای ادب، آرزو یا فرضیه به کار می‌رود.",
+      uk:"Основа майбутнього часу + закінчення недоконаного минулого. Виражає ввічливість, побажання або гіпотезу.",
+      wo:"Racine bu futur + terminaison bu imparfait. Day wax teggin, bëgg-bëgg walla xalaat.",
+      hi:"भविष्य काल की जड़ + अपूर्ण भूतकाल के प्रत्यय। शिष्टाचार, इच्छा या परिकल्पना व्यक्त करता है।" }},
+{ niveau:"B2", d:"subjonctif", titre:"Le subjonctif présent",
+  regle:"S'utilise après « il faut que », « je veux que », pour exprimer une obligation, un souhait ou un doute.",
+  exemples:["Il faut que je travaille.","Je veux que tu tries les vêtements.","Il faut qu'elle vérifie la qualité."],
+  exTr:{ ar:"يجب أن أعمل.", ro:"Trebuie să lucrez.", pt:"É preciso que eu trabalhe.", tr:"Çalışmam gerekiyor.", vi:"Tôi cần phải làm việc.", pl:"Muszę pracować.", es:"Es necesario que trabaje.", en:"I have to work.", de:"Ich muss arbeiten.", it:"Devo lavorare.", fa:"باید کار کنم.", uk:"Мені потрібно працювати.", wo:"War naa liggéey.", hi:"मुझे काम करना ज़रूरी है।" },
+  t:{ ar:"يُستخدم بعد «il faut que»، «je veux que»، للتعبير عن واجب أو رغبة أو شك.",
+      ro:"Se folosește după „il faut que”, „je veux que”, pentru a exprima o obligație, o dorință sau o îndoială.",
+      pt:"Usa-se depois de «il faut que», «je veux que», para exprimir obrigação, desejo ou dúvida.",
+      tr:"«il faut que», «je veux que» ifadelerinden sonra kullanılır; zorunluluk, dilek veya şüphe belirtir.",
+      vi:"Dùng sau «il faut que», «je veux que», để diễn tả nghĩa vụ, mong muốn hoặc nghi ngờ.",
+      pl:"Używany po „il faut que”, „je veux que”, aby wyrazić obowiązek, życzenie lub wątpliwość.",
+      es:"Se usa después de «il faut que», «je veux que», para expresar obligación, deseo o duda.",
+      en:"Used after « il faut que », « je veux que », to express obligation, a wish, or doubt.",
+      de:"Wird nach „il faut que“, „je veux que“ verwendet, um eine Pflicht, einen Wunsch oder einen Zweifel auszudrücken.",
+      it:"Si usa dopo «il faut que», «je veux que», per esprimere un obbligo, un desiderio o un dubbio.",
+      fa:"بعد از «il faut que»، «je veux que» برای بیان الزام، آرزو یا تردید به کار می‌رود.",
+      uk:"Використовується після «il faut que», «je veux que», щоб виразити обов'язок, побажання або сумнів.",
+      wo:"Dañu koy jëfandikoo ginnaaw «il faut que», «je veux que», ngir wax farata, bëgg-bëgg walla lu am ndogal.",
+      hi:"«il faut que», «je veux que» के बाद उपयोग होता है, दायित्व, इच्छा या संदेह व्यक्त करने के लिए।" }},
+{ niveau:"A2", d:"pronomscod", titre:"Les pronoms compléments directs (COD)",
+  regle:"Remplacent un nom déjà mentionné : me, te, le, la, nous, vous, les. Se placent avant le verbe.",
+  exemples:["Je vérifie le tissu. → Je le vérifie.","Tu tries les vêtements. → Tu les tries.","Il connaît cette machine. → Il la connaît."],
+  exTr:{ ar:"أتحقق من القماش. → أتحقق منه.", ro:"Verific materialul. → Îl verific.", pt:"Verifico o tecido. → Verifico-o.", tr:"Kumaşı kontrol ediyorum. → Onu kontrol ediyorum.", vi:"Tôi kiểm tra vải. → Tôi kiểm tra nó.", pl:"Sprawdzam tkaninę. → Sprawdzam ją.", es:"Verifico la tela. → La verifico.", en:"I check the fabric. → I check it.", de:"Ich prüfe den Stoff. → Ich prüfe ihn.", it:"Controllo il tessuto. → Lo controllo.", fa:"پارچه را بررسی می‌کنم. → آن را بررسی می‌کنم.", uk:"Я перевіряю тканину. → Я її перевіряю.", wo:"Dama seet tissu bi. → Dama ko seet.", hi:"मैं कपड़े की जांच करता/करती हूं। → मैं इसकी जांच करता/करती हूं।" },
+  t:{ ar:"تحل محل اسم سبق ذكره: me, te, le, la, nous, vous, les. توضع قبل الفعل.",
+      ro:"Înlocuiesc un nume deja menționat: me, te, le, la, nous, vous, les. Se plasează înaintea verbului.",
+      pt:"Substituem um nome já mencionado: me, te, le, la, nous, vous, les. Colocam-se antes do verbo.",
+      tr:"Daha önce belirtilen bir ismin yerine geçer: me, te, le, la, nous, vous, les. Fiilden önce yer alır.",
+      vi:"Thay thế cho danh từ đã nhắc đến: me, te, le, la, nous, vous, les. Đặt trước động từ.",
+      pl:"Zastępują wcześniej wspomniany rzeczownik: me, te, le, la, nous, vous, les. Stawiane przed czasownikiem.",
+      es:"Reemplazan un nombre ya mencionado: me, te, le, la, nous, vous, les. Se colocan antes del verbo.",
+      en:"Replace a previously mentioned noun: me, te, le, la, nous, vous, les. Placed before the verb.",
+      de:"Ersetzen ein bereits genanntes Nomen: me, te, le, la, nous, vous, les. Stehen vor dem Verb.",
+      it:"Sostituiscono un nome già menzionato: me, te, le, la, nous, vous, les. Si mettono prima del verbo.",
+      fa:"جایگزین اسمی می‌شوند که قبلاً ذکر شده: me, te, le, la, nous, vous, les. قبل از فعل قرار می‌گیرند.",
+      uk:"Замінюють раніше згаданий іменник: me, te, le, la, nous, vous, les. Ставляться перед дієсловом.",
+      wo:"Dañu koy wuutu tur bu ñu waxoon njëkk: me, te, le, la, nous, vous, les. Dañu koy def virement bu verbe bi.",
+      hi:"पहले बताई गई संज्ञा को बदलते हैं: me, te, le, la, nous, vous, les। क्रिया से पहले रखे जाते हैं।" }},
+{ niveau:"A2", d:"prepositions", titre:"Les prépositions de lieu et de temps",
+  regle:"Lieu : à, dans, sur, sous, devant, derrière. Temps : avant, après, pendant, depuis.",
+  exemples:["Le tissu est sur la table.","Je travaille dans l'atelier.","Je suis arrivé avant 9 heures."],
+  exTr:{ ar:"القماش على الطاولة.", ro:"Materialul este pe masă.", pt:"O tecido está na mesa.", tr:"Kumaş masanın üzerinde.", vi:"Vải ở trên bàn.", pl:"Tkanina jest na stole.", es:"La tela está sobre la mesa.", en:"The fabric is on the table.", de:"Der Stoff liegt auf dem Tisch.", it:"Il tessuto è sul tavolo.", fa:"پارچه روی میز است.", uk:"Тканина на столі.", wo:"Tissu bi nekk na ci kaw taabal bi.", hi:"कपड़ा मेज़ पर है।" },
+  t:{ ar:"المكان: à, dans, sur, sous, devant, derrière. الزمان: avant, après, pendant, depuis.",
+      ro:"Loc: à, dans, sur, sous, devant, derrière. Timp: avant, après, pendant, depuis.",
+      pt:"Lugar: à, dans, sur, sous, devant, derrière. Tempo: avant, après, pendant, depuis.",
+      tr:"Yer: à, dans, sur, sous, devant, derrière. Zaman: avant, après, pendant, depuis.",
+      vi:"Nơi chốn: à, dans, sur, sous, devant, derrière. Thời gian: avant, après, pendant, depuis.",
+      pl:"Miejsce: à, dans, sur, sous, devant, derrière. Czas: avant, après, pendant, depuis.",
+      es:"Lugar: à, dans, sur, sous, devant, derrière. Tiempo: avant, après, pendant, depuis.",
+      en:"Place: à, dans, sur, sous, devant, derrière. Time: avant, après, pendant, depuis.",
+      de:"Ort: à, dans, sur, sous, devant, derrière. Zeit: avant, après, pendant, depuis.",
+      it:"Luogo: à, dans, sur, sous, devant, derrière. Tempo: avant, après, pendant, depuis.",
+      fa:"مکان: à, dans, sur, sous, devant, derrière. زمان: avant, après, pendant, depuis.",
+      uk:"Місце: à, dans, sur, sous, devant, derrière. Час: avant, après, pendant, depuis.",
+      wo:"Bérab: à, dans, sur, sous, devant, derrière. Waxtu: avant, après, pendant, depuis.",
+      hi:"स्थान: à, dans, sur, sous, devant, derrière। समय: avant, après, pendant, depuis।" }},
+{ niveau:"B1", d:"relatifs", titre:"Les pronoms relatifs qui / que",
+  regle:"« Qui » remplace le sujet, « que » remplace le complément d'objet direct.",
+  exemples:["C'est le tissu qui est rouge.","C'est le pantalon que je couds.","La formatrice qui explique la règle est arrivée."],
+  exTr:{ ar:"هذا هو القماش الأحمر.", ro:"Acesta este materialul care este roșu.", pt:"Este é o tecido que é vermelho.", tr:"Kırmızı olan kumaş bu.", vi:"Đây là loại vải màu đỏ.", pl:"To jest tkanina, która jest czerwona.", es:"Esta es la tela que es roja.", en:"This is the fabric that is red.", de:"Das ist der Stoff, der rot ist.", it:"Questo è il tessuto che è rosso.", fa:"این پارچه‌ای است که قرمز است.", uk:"Це тканина, яка червона.", wo:"Lii mooy tissu bi mel xonq.", hi:"यह वह कपड़ा है जो लाल है।" },
+  t:{ ar:"«qui» تحل محل الفاعل، «que» تحل محل المفعول به المباشر.",
+      ro:"„Qui” înlocuiește subiectul, „que” înlocuiește complementul direct.",
+      pt:"«Qui» substitui o sujeito, «que» substitui o complemento direto.",
+      tr:"«Qui» özneyi, «que» doğrudan nesneyi değiştirir.",
+      vi:"«Qui» thay thế chủ ngữ, «que» thay thế tân ngữ trực tiếp.",
+      pl:"„Qui” zastępuje podmiot, „que” zastępuje dopełnienie bliższe.",
+      es:"«Qui» reemplaza el sujeto, «que» reemplaza el complemento directo.",
+      en:"« Qui » replaces the subject, « que » replaces the direct object.",
+      de:"„Qui“ ersetzt das Subjekt, „que“ ersetzt das direkte Objekt.",
+      it:"«Qui» sostituisce il soggetto, «que» sostituisce il complemento oggetto.",
+      fa:"«qui» جایگزین فاعل و «que» جایگزین مفعول مستقیم می‌شود.",
+      uk:"«Qui» замінює підмет, «que» замінює прямий додаток.",
+      wo:"«Qui» dafay wuutu sujet bi, «que» dafay wuutu complément direct bi.",
+      hi:"«qui» कर्ता की जगह लेता है, «que» प्रत्यक्ष कर्म की जगह लेता है।" }},
+{ niveau:"B1", d:"cause", titre:"L'expression de la cause (parce que / car)",
+  regle:"« Parce que » répond à la question « pourquoi ? ». « Car » a le même sens mais s'utilise surtout à l'écrit.",
+  exemples:["Je suis en retard parce que le bus était en panne.","Elle a réussi car elle s'est bien préparée."],
+  exTr:{ ar:"أنا متأخر لأن الحافلة كانت معطلة.", ro:"Am întârziat pentru că autobuzul s-a stricat.", pt:"Estou atrasado porque o autocarro avariou.", tr:"Otobüs arızalandığı için geç kaldım.", vi:"Tôi bị trễ vì xe buýt bị hỏng.", pl:"Jestem spóźniony/a, ponieważ autobus się zepsuł.", es:"Llego tarde porque el autobús se averió.", en:"I am late because the bus broke down.", de:"Ich bin spät dran, weil der Bus eine Panne hatte.", it:"Sono in ritardo perché l'autobus si è guastato.", fa:"من دیر کردم چون اتوبوس خراب شده بود.", uk:"Я запізнююсь, бо автобус зламався.", wo:"Yàggi naa ndax bus bi tas na.", hi:"मुझे देर हो गई क्योंकि बस खराब हो गई थी।" },
+  t:{ ar:"«parce que» تجيب عن سؤال «لماذا؟». «car» لها نفس المعنى لكن تُستخدم غالبًا في الكتابة.",
+      ro:"„Parce que” răspunde la întrebarea „de ce?”. „Car” are același sens, dar se folosește mai ales în scris.",
+      pt:"«Parce que» responde à pergunta «porquê?». «Car» tem o mesmo sentido mas usa-se sobretudo na escrita.",
+      tr:"«Parce que» «neden?» sorusuna cevap verir. «Car» aynı anlama gelir ama daha çok yazıda kullanılır.",
+      vi:"«Parce que» trả lời câu hỏi «tại sao?». «Car» có nghĩa tương tự nhưng chủ yếu dùng trong văn viết.",
+      pl:"„Parce que” odpowiada na pytanie „dlaczego?”. „Car” ma to samo znaczenie, ale używane głównie w piśmie.",
+      es:"«Parce que» responde a la pregunta «¿por qué?». «Car» tiene el mismo sentido pero se usa sobre todo por escrito.",
+      en:"« Parce que » answers the question « why? ». « Car » has the same meaning but is mostly used in writing.",
+      de:"„Parce que“ beantwortet die Frage „warum?“. „Car“ hat dieselbe Bedeutung, wird aber vor allem schriftlich verwendet.",
+      it:"«Parce que» risponde alla domanda «perché?». «Car» ha lo stesso significato ma si usa soprattutto per iscritto.",
+      fa:"«parce que» به سؤال «چرا؟» پاسخ می‌دهد. «car» همان معنا را دارد اما بیشتر در نوشتار استفاده می‌شود.",
+      uk:"«Parce que» відповідає на питання «чому?». «Car» має те саме значення, але вживається переважно на письмі.",
+      wo:"«Parce que» dafay tontu laaj «lu tax?». «Car» am na benn sens waaye dañu koy jëfandikoo lu ëpp ci bind.",
+      hi:"«parce que» «क्यों?» प्रश्न का उत्तर देता है। «car» का वही अर्थ है लेकिन मुख्यतः लेखन में प्रयुक्त होता है।" }},
+{ niveau:"B2", d:"opposition", titre:"Les connecteurs d'opposition (bien que, cependant)",
+  regle:"« Bien que » + subjonctif introduit une concession. « Cependant » relie deux idées opposées, en début de phrase.",
+  exemples:["Bien qu'il pleuve, nous travaillons.","Le tissu est abîmé ; cependant, il reste utilisable."],
+  exTr:{ ar:"على الرغم من هطول المطر، فإننا نعمل.", ro:"Deși plouă, noi lucrăm.", pt:"Embora chova, nós trabalhamos.", tr:"Yağmur yağmasına rağmen çalışıyoruz.", vi:"Mặc dù trời mưa, chúng tôi vẫn làm việc.", pl:"Chociaż pada deszcz, pracujemy.", es:"Aunque llueve, trabajamos.", en:"Although it is raining, we are working.", de:"Obwohl es regnet, arbeiten wir.", it:"Anche se piove, lavoriamo.", fa:"با اینکه باران می‌بارد، ما کار می‌کنیم.", uk:"Хоча йде дощ, ми працюємо.", wo:"Suñu am taw, dañuy liggéey.", hi:"हालांकि बारिश हो रही है, हम काम कर रहे हैं।" },
+  t:{ ar:"«bien que» + الفعل المضارع الشرطي تُدخل تنازلاً. «cependant» تربط فكرتين متعارضتين.",
+      ro:"„Bien que” + subjonctiv introduce o concesie. „Cependant” leagă două idei opuse.",
+      pt:"«Bien que» + conjuntivo introduz uma concessão. «Cependant» liga duas ideias opostas.",
+      tr:"«Bien que» + subjonctif bir kabullenmeyi ifade eder. «Cependant» iki zıt fikri birbirine bağlar.",
+      vi:"«Bien que» + thức giả định giới thiệu sự nhượng bộ. «Cependant» nối hai ý trái ngược.",
+      pl:"„Bien que” + tryb łączący wprowadza ustępstwo. „Cependant” łączy dwie przeciwstawne idee.",
+      es:"«Bien que» + subjuntivo introduce una concesión. «Cependant» une dos ideas opuestas.",
+      en:"« Bien que » + subjunctive introduces a concession. « Cependant » links two opposing ideas.",
+      de:"„Bien que“ + Subjonctif leitet eine Einräumung ein. „Cependant“ verbindet zwei gegensätzliche Ideen.",
+      it:"«Bien que» + congiuntivo introduce una concessione. «Cependant» collega due idee opposte.",
+      fa:"«bien que» + وجه التزامی یک امتیاز را معرفی می‌کند. «cependant» دو ایده متضاد را به هم پیوند می‌دهد.",
+      uk:"«Bien que» + умовний спосіб вводить поступку. «Cependant» пов'язує дві протилежні ідеї.",
+      wo:"«Bien que» + subjonctif dafay tegoo ab concession. «Cependant» dafay jokkale ñaari xalaat yu wuute.",
+      hi:"«bien que» + संभाव्य भाव एक रियायत प्रस्तुत करता है। «cependant» दो विपरीत विचारों को जोड़ता है।" }},
+{ niveau:"B2", d:"passive", titre:"La voix passive",
+  regle:"Se forme avec être + participe passé. Le sujet subit l'action au lieu de la faire.",
+  exemples:["Le tissu est trié par l'opératrice.","Les vêtements sont vérifiés avant l'envoi."],
+  exTr:{ ar:"يتم فرز القماش من قبل العاملة.", ro:"Materialul este sortat de operatoare.", pt:"O tecido é selecionado pela operadora.", tr:"Kumaş operatör tarafından ayrıştırılıyor.", vi:"Vải được phân loại bởi nữ công nhân.", pl:"Tkanina jest sortowana przez operatorkę.", es:"La tela es clasificada por la operaria.", en:"The fabric is sorted by the operator.", de:"Der Stoff wird von der Bedienerin sortiert.", it:"Il tessuto è smistato dall'operatrice.", fa:"پارچه توسط اپراتور دسته‌بندی می‌شود.", uk:"Тканину сортує оператор.", wo:"Tissu bi, opératrice bi mooy ko tri.", hi:"कपड़े को ऑपरेटर द्वारा छांटा जाता है।" },
+  t:{ ar:"تُصاغ بـ être + الفاعل الماضي. الفاعل يخضع للفعل بدلاً من القيام به.",
+      ro:"Se formează cu être + participiul trecut. Subiectul suferă acțiunea în loc s-o facă.",
+      pt:"Forma-se com être + particípio passado. O sujeito sofre a ação em vez de a praticar.",
+      tr:"Être + geçmiş zaman ortacı ile oluşur. Özne eylemi yapmak yerine ona maruz kalır.",
+      vi:"Được tạo bởi être + phân từ quá khứ. Chủ ngữ chịu tác động thay vì thực hiện hành động.",
+      pl:"Tworzy się z être + imiesłów bierny. Podmiot doznaje czynności zamiast ją wykonywać.",
+      es:"Se forma con être + participio pasado. El sujeto sufre la acción en lugar de realizarla.",
+      en:"Formed with être + past participle. The subject undergoes the action instead of performing it.",
+      de:"Wird mit être + Partizip Perfekt gebildet. Das Subjekt erleidet die Handlung, statt sie auszuführen.",
+      it:"Si forma con être + participio passato. Il soggetto subisce l'azione invece di compierla.",
+      fa:"با être + اسم مفعول ساخته می‌شود. فاعل عمل را متحمل می‌شود نه اینکه آن را انجام دهد.",
+      uk:"Утворюється з être + дієприкметник минулого часу. Підмет зазнає дії замість того, щоб її виконувати.",
+      wo:"Dañu ko def ak être + participe passé. Sujet bi dafay jot jëf bi, du ko def.",
+      hi:"être + भूत कृदंत से बनता है। कर्ता क्रिया करने के बजाय उसे सहता है।" }},
+];
+
+var CONJ_FULL = [
+{ verbe:"être", groupe:"irrégulier",
+  present:[ {p:"je",f:"suis"},{p:"tu",f:"es"},{p:"il / elle",f:"est"},
+    {p:"nous",f:"sommes"},{p:"vous",f:"êtes"},{p:"ils / elles",f:"sont"} ],
+  passecompose:[ {p:"j'",f:"ai été"},{p:"tu",f:"as été"},{p:"il / elle",f:"a été"},
+    {p:"nous",f:"avons été"},{p:"vous",f:"avez été"},{p:"ils / elles",f:"ont été"} ],
+  imparfait:[ {p:"j'",f:"étais"},{p:"tu",f:"étais"},{p:"il / elle",f:"était"},
+    {p:"nous",f:"étions"},{p:"vous",f:"étiez"},{p:"ils / elles",f:"étaient"} ],
+  futur:[ {p:"je",f:"serai"},{p:"tu",f:"seras"},{p:"il / elle",f:"sera"},
+    {p:"nous",f:"serons"},{p:"vous",f:"serez"},{p:"ils / elles",f:"seront"} ],
+  conditionnel:[ {p:"je",f:"serais"},{p:"tu",f:"serais"},{p:"il / elle",f:"serait"},
+    {p:"nous",f:"serions"},{p:"vous",f:"seriez"},{p:"ils / elles",f:"seraient"} ],
+  subjonctif:[ {p:"que je",f:"sois"},{p:"que tu",f:"sois"},{p:"qu'il / elle",f:"soit"},
+    {p:"que nous",f:"soyons"},{p:"que vous",f:"soyez"},{p:"qu'ils / elles",f:"soient"} ] },
+{ verbe:"avoir", groupe:"irrégulier",
+  present:[ {p:"j'",f:"ai"},{p:"tu",f:"as"},{p:"il / elle",f:"a"},
+    {p:"nous",f:"avons"},{p:"vous",f:"avez"},{p:"ils / elles",f:"ont"} ],
+  passecompose:[ {p:"j'",f:"ai eu"},{p:"tu",f:"as eu"},{p:"il / elle",f:"a eu"},
+    {p:"nous",f:"avons eu"},{p:"vous",f:"avez eu"},{p:"ils / elles",f:"ont eu"} ],
+  imparfait:[ {p:"j'",f:"avais"},{p:"tu",f:"avais"},{p:"il / elle",f:"avait"},
+    {p:"nous",f:"avions"},{p:"vous",f:"aviez"},{p:"ils / elles",f:"avaient"} ],
+  futur:[ {p:"j'",f:"aurai"},{p:"tu",f:"auras"},{p:"il / elle",f:"aura"},
+    {p:"nous",f:"aurons"},{p:"vous",f:"aurez"},{p:"ils / elles",f:"auront"} ],
+  conditionnel:[ {p:"j'",f:"aurais"},{p:"tu",f:"aurais"},{p:"il / elle",f:"aurait"},
+    {p:"nous",f:"aurions"},{p:"vous",f:"auriez"},{p:"ils / elles",f:"auraient"} ],
+  subjonctif:[ {p:"que j'",f:"aie"},{p:"que tu",f:"aies"},{p:"qu'il / elle",f:"ait"},
+    {p:"que nous",f:"ayons"},{p:"que vous",f:"ayez"},{p:"qu'ils / elles",f:"aient"} ] },
+{ verbe:"faire", groupe:"irrégulier",
+  present:[ {p:"je",f:"fais"},{p:"tu",f:"fais"},{p:"il / elle",f:"fait"},
+    {p:"nous",f:"faisons"},{p:"vous",f:"faites"},{p:"ils / elles",f:"font"} ],
+  passecompose:[ {p:"j'",f:"ai fait"},{p:"tu",f:"as fait"},{p:"il / elle",f:"a fait"},
+    {p:"nous",f:"avons fait"},{p:"vous",f:"avez fait"},{p:"ils / elles",f:"ont fait"} ],
+  imparfait:[ {p:"je",f:"faisais"},{p:"tu",f:"faisais"},{p:"il / elle",f:"faisait"},
+    {p:"nous",f:"faisions"},{p:"vous",f:"faisiez"},{p:"ils / elles",f:"faisaient"} ],
+  futur:[ {p:"je",f:"ferai"},{p:"tu",f:"feras"},{p:"il / elle",f:"fera"},
+    {p:"nous",f:"ferons"},{p:"vous",f:"ferez"},{p:"ils / elles",f:"feront"} ],
+  conditionnel:[ {p:"je",f:"ferais"},{p:"tu",f:"ferais"},{p:"il / elle",f:"ferait"},
+    {p:"nous",f:"ferions"},{p:"vous",f:"feriez"},{p:"ils / elles",f:"feraient"} ],
+  subjonctif:[ {p:"que je",f:"fasse"},{p:"que tu",f:"fasses"},{p:"qu'il / elle",f:"fasse"},
+    {p:"que nous",f:"fassions"},{p:"que vous",f:"fassiez"},{p:"qu'ils / elles",f:"fassent"} ] },
+{ verbe:"aller", groupe:"irrégulier",
+  present:[ {p:"je",f:"vais"},{p:"tu",f:"vas"},{p:"il / elle",f:"va"},
+    {p:"nous",f:"allons"},{p:"vous",f:"allez"},{p:"ils / elles",f:"vont"} ],
+  passecompose:[ {p:"je",f:"suis allé(e)"},{p:"tu",f:"es allé(e)"},{p:"il / elle",f:"est allé(e)"},
+    {p:"nous",f:"sommes allé(e)s"},{p:"vous",f:"êtes allé(e)(s)"},{p:"ils / elles",f:"sont allé(e)s"} ],
+  imparfait:[ {p:"j'",f:"allais"},{p:"tu",f:"allais"},{p:"il / elle",f:"allait"},
+    {p:"nous",f:"allions"},{p:"vous",f:"alliez"},{p:"ils / elles",f:"allaient"} ],
+  futur:[ {p:"j'",f:"irai"},{p:"tu",f:"iras"},{p:"il / elle",f:"ira"},
+    {p:"nous",f:"irons"},{p:"vous",f:"irez"},{p:"ils / elles",f:"iront"} ],
+  conditionnel:[ {p:"j'",f:"irais"},{p:"tu",f:"irais"},{p:"il / elle",f:"irait"},
+    {p:"nous",f:"irions"},{p:"vous",f:"iriez"},{p:"ils / elles",f:"iraient"} ],
+  subjonctif:[ {p:"que j'",f:"aille"},{p:"que tu",f:"ailles"},{p:"qu'il / elle",f:"aille"},
+    {p:"que nous",f:"allions"},{p:"que vous",f:"alliez"},{p:"qu'ils / elles",f:"aillent"} ] },
+{ verbe:"travailler", groupe:"1er groupe (-ER)",
+  present:[ {p:"je",f:"travaille"},{p:"tu",f:"travailles"},{p:"il / elle",f:"travaille"},
+    {p:"nous",f:"travaillons"},{p:"vous",f:"travaillez"},{p:"ils / elles",f:"travaillent"} ],
+  passecompose:[ {p:"j'",f:"ai travaillé"},{p:"tu",f:"as travaillé"},{p:"il / elle",f:"a travaillé"},
+    {p:"nous",f:"avons travaillé"},{p:"vous",f:"avez travaillé"},{p:"ils / elles",f:"ont travaillé"} ],
+  imparfait:[ {p:"je",f:"travaillais"},{p:"tu",f:"travaillais"},{p:"il / elle",f:"travaillait"},
+    {p:"nous",f:"travaillions"},{p:"vous",f:"travailliez"},{p:"ils / elles",f:"travaillaient"} ],
+  futur:[ {p:"je",f:"travaillerai"},{p:"tu",f:"travailleras"},{p:"il / elle",f:"travaillera"},
+    {p:"nous",f:"travaillerons"},{p:"vous",f:"travaillerez"},{p:"ils / elles",f:"travailleront"} ],
+  conditionnel:[ {p:"je",f:"travaillerais"},{p:"tu",f:"travaillerais"},{p:"il / elle",f:"travaillerait"},
+    {p:"nous",f:"travaillerions"},{p:"vous",f:"travailleriez"},{p:"ils / elles",f:"travailleraient"} ],
+  subjonctif:[ {p:"que je",f:"travaille"},{p:"que tu",f:"travailles"},{p:"qu'il / elle",f:"travaille"},
+    {p:"que nous",f:"travaillions"},{p:"que vous",f:"travailliez"},{p:"qu'ils / elles",f:"travaillent"} ] },
+{ verbe:"trier", groupe:"1er groupe (-ER)",
+  present:[ {p:"je",f:"trie"},{p:"tu",f:"tries"},{p:"il / elle",f:"trie"},
+    {p:"nous",f:"trions"},{p:"vous",f:"triez"},{p:"ils / elles",f:"trient"} ],
+  passecompose:[ {p:"j'",f:"ai trié"},{p:"tu",f:"as trié"},{p:"il / elle",f:"a trié"},
+    {p:"nous",f:"avons trié"},{p:"vous",f:"avez trié"},{p:"ils / elles",f:"ont trié"} ],
+  imparfait:[ {p:"je",f:"triais"},{p:"tu",f:"triais"},{p:"il / elle",f:"triait"},
+    {p:"nous",f:"triions"},{p:"vous",f:"triiez"},{p:"ils / elles",f:"triaient"} ],
+  futur:[ {p:"je",f:"trierai"},{p:"tu",f:"trieras"},{p:"il / elle",f:"triera"},
+    {p:"nous",f:"trierons"},{p:"vous",f:"trierez"},{p:"ils / elles",f:"trieront"} ],
+  conditionnel:[ {p:"je",f:"trierais"},{p:"tu",f:"trierais"},{p:"il / elle",f:"trierait"},
+    {p:"nous",f:"trierions"},{p:"vous",f:"trieriez"},{p:"ils / elles",f:"trieraient"} ],
+  subjonctif:[ {p:"que je",f:"trie"},{p:"que tu",f:"tries"},{p:"qu'il / elle",f:"trie"},
+    {p:"que nous",f:"triions"},{p:"que vous",f:"triiez"},{p:"qu'ils / elles",f:"trient"} ] },
+{ verbe:"vérifier", groupe:"1er groupe (-ER)",
+  present:[ {p:"je",f:"vérifie"},{p:"tu",f:"vérifies"},{p:"il / elle",f:"vérifie"},
+    {p:"nous",f:"vérifions"},{p:"vous",f:"vérifiez"},{p:"ils / elles",f:"vérifient"} ],
+  passecompose:[ {p:"j'",f:"ai vérifié"},{p:"tu",f:"as vérifié"},{p:"il / elle",f:"a vérifié"},
+    {p:"nous",f:"avons vérifié"},{p:"vous",f:"avez vérifié"},{p:"ils / elles",f:"ont vérifié"} ],
+  imparfait:[ {p:"je",f:"vérifiais"},{p:"tu",f:"vérifiais"},{p:"il / elle",f:"vérifiait"},
+    {p:"nous",f:"vérifiions"},{p:"vous",f:"vérifiiez"},{p:"ils / elles",f:"vérifiaient"} ],
+  futur:[ {p:"je",f:"vérifierai"},{p:"tu",f:"vérifieras"},{p:"il / elle",f:"vérifiera"},
+    {p:"nous",f:"vérifierons"},{p:"vous",f:"vérifierez"},{p:"ils / elles",f:"vérifieront"} ],
+  conditionnel:[ {p:"je",f:"vérifierais"},{p:"tu",f:"vérifierais"},{p:"il / elle",f:"vérifierait"},
+    {p:"nous",f:"vérifierions"},{p:"vous",f:"vérifieriez"},{p:"ils / elles",f:"vérifieraient"} ],
+  subjonctif:[ {p:"que je",f:"vérifie"},{p:"que tu",f:"vérifies"},{p:"qu'il / elle",f:"vérifie"},
+    {p:"que nous",f:"vérifiions"},{p:"que vous",f:"vérifiiez"},{p:"qu'ils / elles",f:"vérifient"} ] },
+{ verbe:"coudre", groupe:"3e groupe (irrégulier)",
+  present:[ {p:"je",f:"couds"},{p:"tu",f:"couds"},{p:"il / elle",f:"coud"},
+    {p:"nous",f:"cousons"},{p:"vous",f:"cousez"},{p:"ils / elles",f:"cousent"} ],
+  passecompose:[ {p:"j'",f:"ai cousu"},{p:"tu",f:"as cousu"},{p:"il / elle",f:"a cousu"},
+    {p:"nous",f:"avons cousu"},{p:"vous",f:"avez cousu"},{p:"ils / elles",f:"ont cousu"} ],
+  imparfait:[ {p:"je",f:"cousais"},{p:"tu",f:"cousais"},{p:"il / elle",f:"cousait"},
+    {p:"nous",f:"cousions"},{p:"vous",f:"cousiez"},{p:"ils / elles",f:"cousaient"} ],
+  futur:[ {p:"je",f:"coudrai"},{p:"tu",f:"coudras"},{p:"il / elle",f:"coudra"},
+    {p:"nous",f:"coudrons"},{p:"vous",f:"coudrez"},{p:"ils / elles",f:"coudront"} ],
+  conditionnel:[ {p:"je",f:"coudrais"},{p:"tu",f:"coudrais"},{p:"il / elle",f:"coudrait"},
+    {p:"nous",f:"coudrions"},{p:"vous",f:"coudriez"},{p:"ils / elles",f:"coudraient"} ],
+  subjonctif:[ {p:"que je",f:"couse"},{p:"que tu",f:"couses"},{p:"qu'il / elle",f:"couse"},
+    {p:"que nous",f:"cousions"},{p:"que vous",f:"cousiez"},{p:"qu'ils / elles",f:"cousent"} ] },
+];
+
+var TEMPS_LABELS = {
+  present:"Présent", passecompose:"Passé composé", imparfait:"Imparfait",
+  futur:"Futur simple", conditionnel:"Conditionnel présent", subjonctif:"Subjonctif présent"
+};
+var tempsActif = "present";
+
+
+// ════════════════════════════════════
+// EXERCICES À TROU — réponse vocale (Phase 1, niveau A1)
+// ════════════════════════════════════
+var EXO_FULL = [
+{ niveau:"A1", theme:"conj", avant:"Je", trou:"travaille", apres:"à l'atelier tous les matins.",
+  indice:"Verbe travailler, au présent, avec « je »", phrase:"Je travaille à l'atelier tous les matins." },
+{ niveau:"A1", theme:"conj", avant:"Tu", trou:"tries", apres:"les vêtements par couleur.",
+  indice:"Verbe trier, au présent, avec « tu »", phrase:"Tu tries les vêtements par couleur." },
+{ niveau:"A1", theme:"conj", avant:"Nous", trou:"vérifions", apres:"la qualité du tissu.",
+  indice:"Verbe vérifier, au présent, avec « nous »", phrase:"Nous vérifions la qualité du tissu." },
+{ niveau:"A1", theme:"conj", avant:"Elle", trou:"coud", apres:"une veste en coton.",
+  indice:"Verbe coudre, au présent, avec « elle »", phrase:"Elle coud une veste en coton." },
+{ niveau:"A1", theme:"conj", avant:"Ils", trou:"ont", apres:"un rendez-vous à 9 heures.",
+  indice:"Verbe avoir, au présent, avec « ils »", phrase:"Ils ont un rendez-vous à 9 heures." },
+{ niveau:"A1", theme:"conj", avant:"Vous", trou:"êtes", apres:"en retard ce matin.",
+  indice:"Verbe être, au présent, avec « vous »", phrase:"Vous êtes en retard ce matin." },
+{ niveau:"A1", theme:"conj", avant:"Vous", trou:"allez", apres:"au travail à pied.",
+  indice:"Verbe aller, au présent, avec « vous »", phrase:"Vous allez au travail à pied." },
+{ niveau:"A1", theme:"conj", avant:"Je", trou:"fais", apres:"une pause à midi.",
+  indice:"Verbe faire, au présent, avec « je »", phrase:"Je fais une pause à midi." },
+{ niveau:"A1", theme:"articles", avant:"", trou:"Le", apres:"tissu est rouge.",
+  indice:"Article défini masculin singulier", phrase:"Le tissu est rouge." },
+{ niveau:"A1", theme:"negation", avant:"Je ne", trou:"trie", apres:"pas aujourd'hui.",
+  indice:"Verbe trier, au présent, avec « je », dans une phrase négative", phrase:"Je ne trie pas aujourd'hui." },
+];
+
+
+var QS = {
+  textile:{phys:[
+    {q:"Bonjour ! Pouvez-vous vous présenter en quelques mots ?",h:"Dites votre prénom, d'où vous venez, et pourquoi vous êtes là. 3 phrases suffisent.",l:0},
+    {q:"Pourquoi souhaitez-vous travailler dans le recyclage textile ?",h:"Pensez à ce qui vous plaît : l'ordre, aider les autres, l'environnement.",l:1},
+    {q:"Avez-vous déjà travaillé dans un entrepôt ou un atelier ?",h:"Si vous n'avez pas d'expérience, décrivez un travail similaire. Soyez honnête.",l:4},
+    {q:"Êtes-vous disponible à partir de 7 heures du matin et parfois le samedi ?",h:"Répondez clairement oui ou non. Expliquez vos contraintes si vous en avez.",l:2},
+    {q:"Comment réagissez-vous quand vous ne comprenez pas une consigne ?",h:"La bonne réponse : vous demandez à répéter. C'est une qualité !",l:2},
+    {q:"Avez-vous des questions à me poser ?",h:"Posez toujours au moins une question. Ça montre votre intérêt.",l:3}
+  ],tel:[
+    {q:"Allô, bonjour ! Je vous appelle d'EKITEE suite à votre candidature. Vous êtes disponible quelques minutes ?",h:"Dites si vous pouvez parler. Si mauvais moment, proposez un créneau.",l:2},
+    {q:"Pouvez-vous me présenter rapidement votre parcours ?",h:"Parlez lentement, 4 à 5 phrases maximum. Articulez bien.",l:0},
+    {q:"Êtes-vous à l'aise pour porter des charges et rester debout plusieurs heures ?",h:"Répondez honnêtement.",l:4},
+    {q:"Quand seriez-vous disponible pour commencer ?",h:"Donnez une date précise.",l:2},
+    {q:"Avez-vous un moyen de transport pour venir à Morancez ?",h:"Précisez : voiture, vélo, bus, covoiturage.",l:2},
+    {q:"Quelle est votre motivation pour rejoindre un Atelier Chantier d'Insertion ?",h:"Parlez de votre envie de reprendre un rythme, d'apprendre, d'être utile.",l:1}
+  ]},
+  gen:{phys:[
+    {q:"Bonjour ! Parlez-moi de vous.",h:"Présentez votre prénom, votre parcours et ce que vous cherchez.",l:0},
+    {q:"Pourquoi voulez-vous travailler dans notre entreprise ?",h:"Montrez que vous connaissez l'entreprise. Citez quelque chose de concret.",l:1},
+    {q:"Quelles sont vos qualités principales ? Donnez un exemple.",h:"Choisissez une qualité et illustrez avec une situation réelle.",l:3},
+    {q:"Parlez-moi d'une difficulté que vous avez surmontée.",h:"L'important est comment vous avez réagi, pas le problème lui-même.",l:4},
+    {q:"Où vous voyez-vous dans deux ans ?",h:"Montrez que vous voulez progresser. Évitez de dire que vous ne savez pas.",l:1},
+    {q:"Avez-vous des questions pour moi ?",h:"Posez au moins une question concrète.",l:3}
+  ],tel:[
+    {q:"Allô, bonjour ! Cinq minutes pour échanger ?",h:"Si vous pouvez parler, dites-le clairement.",l:2},
+    {q:"Présentez-vous en moins de deux minutes.",h:"Prénom, parcours, ce que vous cherchez. Parlez fort.",l:0},
+    {q:"Qu'est-ce qui vous a attiré dans cette offre d'emploi ?",h:"Citez 1 ou 2 éléments concrets.",l:1},
+    {q:"Avez-vous des contraintes d'horaires ou de déplacement ?",h:"Soyez honnête maintenant.",l:4},
+    {q:"Quelle est votre prétention salariale ?",h:"Si vous ne savez pas, demandez la fourchette prévue.",l:2},
+    {q:"Pouvez-vous venir passer un entretien la semaine prochaine ?",h:"Confirmez avec une date précise. Notez nom, lieu, heure.",l:3}
+  ]}
+};
+
+// ════════════════════════════════════
+// ÉTAT GLOBAL
+// ════════════════════════════════════
+var qIdx=0, score=0, mode='mix', langSim='fr', langLex='fr';
+var isRec=false, recognition=null, curText='', selMicId='', micStream=null;
+var freqSel=3;
+var profil=null;
+var hist=[];
+try{ hist=JSON.parse(localStorage.getItem('ek_hist')||'[]'); }catch(e){}
+try{ var p=localStorage.getItem('ek_profil'); if(p) profil=JSON.parse(p); }catch(e){}
+
+var synth=window.speechSynthesis; // déjà déclaré plus haut ; réassignation sans risque, conservée pour compatibilité
+var hasSTT=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
+
+// ════════════════════════════════════
+// DIAGNOSTIC DE COMPATIBILITÉ VOCALE — affiche une explication visible
+// (plutôt qu'une erreur silencieuse en console) quand l'enregistrement ne peut
+// pas fonctionner, pour distinguer un bug d'une limite du navigateur/contexte.
+// ════════════════════════════════════
+function diagnostiquerCompatibiliteVocale() {
+  var c = document.getElementById('compat');
+  if(!c) return;
+  var problemes = [];
+  if(typeof window.isSecureContext !== 'undefined' && !window.isSecureContext) {
+    problemes.push("Cette page n'est pas ouverte en contexte sécurisé (HTTPS). La reconnaissance vocale du navigateur exige une adresse en https:// (ou localhost) — un fichier ouvert directement (file://) ou une page en http:// simple ne fonctionnera pas, même si le micro est autorisé.");
+  }
+  if(!hasSTT) {
+    problemes.push("Ce navigateur ne propose pas de reconnaissance vocale compatible. Utilisez Google Chrome ou Microsoft Edge à jour — Firefox et Safari ont un support incomplet ou absent de cette fonctionnalité.");
+  }
+  if(problemes.length) {
+    c.classList.add('on');
+    c.innerHTML = '⚠️ Enregistrement vocal indisponible : ' + problemes.join(' ');
+  }
+}
+
+// ════════════════════════════════════
+// RECONNAISSANCE VOCALE
+// Une NOUVELLE instance SpeechRecognition est créée à chaque tentative d'entraînement.
+// (Historique : une version précédente réutilisait une seule instance partagée pour
+// limiter les redemandes d'autorisation micro, mais interrompre puis redémarrer le
+// MÊME objet trop rapidement échoue silencieusement dans plusieurs navigateurs —
+// l'enregistrement ne fonctionnait alors plus du tout. Créer une instance fraîche à
+// chaque clic est plus fiable ; ce n'est normalement PAS ce qui causait les demandes
+// de micro répétées — c'était plutôt le redémarrage automatique en boucle, supprimé
+// ci-dessous dans creerBoutonMeLire et le Lexique.)
+// ════════════════════════════════════
+function getSharedRec() {
+  if(!hasSTT) return null;
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var r = new SR();
+  r.lang = 'fr-FR';
+  // Important : continuous/interimResults ne sont PAS fixés ici — chaque usage a des
+  // besoins différents (le simulateur a besoin d'une écoute continue pour les réponses
+  // longues ; le lexique/grammaire/exercices n'ont besoin que d'une seule phrase courte).
+  // Chaque appelant doit donc régler ces propriétés lui-même juste après cet appel.
+  return r;
+}
+
+// Garantit qu'un seul entraînement (lexique/grammaire/conjugaison/exercice) est actif
+// à la fois. Corrige un bug où démarrer un nouvel entraînement sans avoir arrêté le
+// précédent faisait s'accumuler les phrases dites d'un exercice à l'autre.
+var recSessionStopper = null;
+function demarrerNouvelleSessionRec(fonctionArret) {
+  if(recSessionStopper) {
+    try{ recSessionStopper(); }catch(e){}
+  }
+  recSessionStopper = fonctionArret;
+}
+function terminerSessionRec(fonctionArret) {
+  if(recSessionStopper === fonctionArret) recSessionStopper = null;
+}
+
+// ════════════════════════════════════
+// PROFIL
+// ════════════════════════════════════
+function demarrer() {
+  var prenom = document.getElementById('inp-prenom').value.trim();
+  if(!prenom) {
+    document.getElementById('inp-prenom').style.borderColor='#e24b4a';
+    document.getElementById('inp-prenom').focus();
+    return;
+  }
+  var langue = document.getElementById('inp-langue').value;
+  profil = {
+    id: profil && profil.id ? profil.id : 'ek_'+Date.now(),
+    prenom: prenom,
+    langue: langue,
+    date: new Date().toLocaleDateString('fr-FR')
+  };
+  try{ localStorage.setItem('ek_profil', JSON.stringify(profil)); }catch(e){}
+  // Mettre à jour la langue active
+  langSim = langue;
+  langLex = langue;
+  // Mettre à jour les pills de langue
+  majPillsSim();
+  // Mettre à jour la sélection dans le select langue
+  document.getElementById('inp-langue').value = langue;
+  // Cacher la modale
+  document.getElementById('overlay').style.display='none';
+  // Afficher la barre profil
+  var l = LANGS[langSim];
+  document.getElementById('profil-nom').textContent = '👤 '+prenom+' — '+(l?l.f+' '+l.n:'');
+  document.getElementById('profil-bar').style.display='flex';
+  // Mettre à jour l'historique existant avec le prénom
+  for(var i=0;i<hist.length;i++){
+    if(!hist[i].prenom||hist[i].prenom==='Anonyme') hist[i].prenom=prenom;
+  }
+  try{localStorage.setItem('ek_hist',JSON.stringify(hist));}catch(e){}
+  // Si le simulateur est à zéro (après déconnexion), relancer la première question
+  if(qIdx===0 && score===0) {
+    showQ();
+  }
+}
+
+function changerProfil() {
+  if(profil) {
+    document.getElementById('inp-prenom').value = profil.prenom;
+    document.getElementById('inp-langue').value = profil.langue || 'fr';
+  }
+  // Changer le titre de la modale
+  document.querySelector('#overlay h2').textContent = 'Modifier mon profil';
+  document.getElementById('overlay').style.display='flex';
+}
+
+function deconnecter() {
+  // Effacer le profil mais garder l'historique
+  profil = null;
+  try{localStorage.removeItem('ek_profil');}catch(e){}
+  // Cacher la barre profil
+  document.getElementById('profil-bar').style.display='none';
+  document.getElementById('profil-nom').textContent='';
+  // Réinitialiser la modale pour un nouvel apprenant
+  document.getElementById('inp-prenom').value='';
+  document.getElementById('inp-langue').value='fr';
+  document.querySelector('#overlay h2').textContent='Séance terminée !';
+  // Réinitialiser le simulateur
+  synth.cancel();
+  if(isRec) stopMic();
+  qIdx=0; score=0; curText='';
+  document.getElementById('chat').innerHTML='';
+  document.getElementById('fb').className='fb';
+  document.getElementById('sfin').style.display='none';
+  document.getElementById('rz').style.display='block';
+  document.getElementById('rd').textContent='';
+  document.getElementById('pscore').textContent='0/12';
+  // Afficher la modale pour le prochain apprenant
+  document.getElementById('overlay').style.display='flex';
+  // Ne pas démarrer le simulateur — il démarrera quand le prochain apprenant validera son profil
+}
+
+// ════════════════════════════════════
+// PILLS LANGUE
+// ════════════════════════════════════
+function majPillsSim() {
+  var wrap = document.getElementById('lpills-sim');
+  wrap.querySelectorAll('.lp').forEach(function(b) {
+    b.classList.toggle('on', b.getAttribute('data-lang')===langSim);
+  });
+}
+
+function initPills(containerId, currentLang, onSelect) {
+  var wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  Object.keys(LANGS).forEach(function(k) {
+    var v = LANGS[k];
+    var b = document.createElement('button');
+    b.className = 'lp' + (k===currentLang?' on':'');
+    b.textContent = v.f;
+    b.title = v.n;
+    b.setAttribute('data-lang', k);
+    b.onclick = function() {
+      wrap.querySelectorAll('.lp').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      onSelect(k);
+    };
+    wrap.appendChild(b);
+  });
+}
+
+// ════════════════════════════════════
+// ONGLETS
+// ════════════════════════════════════
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');
+  ['sim','lex','gram','rap','pro'].forEach(function(p) {
+    var panel = document.getElementById('panel-'+p);
+    if(panel) panel.className = 'panel' + (p===id?' on':'');
+  });
+  if(id==='lex') renderLex();
+  if(id==='gram') renderGram();
+  if(id==='pro') renderProg();
+  if(id==='rap') renderPlanning();
+}
+
+// ════════════════════════════════════
+// SYNTHÈSE VOCALE
+// ════════════════════════════════════
+function nettoyerTexte(txt) {
+  // Supprimer ou remplacer les caractères que la synthèse vocale lit mal
+  return txt
+    .replace(/\(e\)/g, '')           // (e) -> rien
+    .replace(/\(s\)/g, '')           // (s) -> rien
+    .replace(/\(es\)/g, '')          // (es) -> rien
+    .replace(/\([^)]{1,3}\)/g, '')   // parenthèses courtes
+    .replace(/\.\.\./g, '')          // points de suspension
+    .replace(/—/g, ',')              // tiret long -> pause
+    .replace(/–/g, ',')              // tiret moyen -> pause
+    .replace(/\//g, ' ou ')          // barre oblique -> ou
+    .replace(/\*/g, '')              // astérisque
+    .replace(/↗/g, '')               // flèche
+    .replace(/🔊/g, '')              // émoji son
+    .replace(/\s+/g, ' ')            // espaces multiples
+    .trim();
+}
+
+function meilleureVoix(code) {
+  var voix = synth.getVoices();
+  var lang = code || 'fr-FR';
+  // Chercher une voix native pour la langue
+  var candidates = voix.filter(function(v){ return v.lang === lang; });
+  if(!candidates.length) candidates = voix.filter(function(v){ return v.lang.startsWith(lang.split('-')[0]); });
+  // Préférer les voix locales (non réseau)
+  var locale = candidates.filter(function(v){ return v.localService; });
+  if(locale.length) return locale[0];
+  if(candidates.length) return candidates[0];
+  return null;
+}
+
+var vitesseEcoute = 0.85;
+try{ var ve=localStorage.getItem('ek_vitesse'); if(ve) vitesseEcoute=parseFloat(ve); }catch(e){}
+
+function setVitesse(val){
+  vitesseEcoute = parseFloat(val)||0.85;
+  try{ localStorage.setItem('ek_vitesse', vitesseEcoute); }catch(e){}
+  // Synchroniser tous les sélecteurs de vitesse de l'application (comparaison numérique,
+  // car les valeurs des <option> sont des chaînes comme "1.0" et non "1")
+  ['sspeed','sspeed-lex','sspeed-gram'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    for(var i=0;i<el.options.length;i++){
+      if(parseFloat(el.options[i].value)===vitesseEcoute){ el.selectedIndex=i; break; }
+    }
+  });
+}
+
+function speak(txt, code, cb) {
+  if(!synth||!txt||!debloque) return;
+  synth.cancel();
+  var u = new SpeechSynthesisUtterance(nettoyerTexte(txt));
+  u.lang = code||'fr-FR';
+  u.rate = vitesseEcoute||0.85;
+  var voix = meilleureVoix(code||'fr-FR');
+  if(voix) u.voice = voix;
+  if(cb) u.onend = cb;
+  synth.speak(u);
+}
+function rejouer() {
+  var qs=getQs(); if(qIdx<qs.length) speak(qs[qIdx].q,'fr-FR');
+}
+function ecouterBilan() {
+  var t=getQs().length*2, p=Math.round(score/t*100);
+  speak('Votre score est '+score+' points sur '+t+'. '+(p>=80?'Excellent !':p>=60?'Bon niveau, continuez !':'Continuez à vous entraîner !'),'fr-FR');
+}
+
+// ════════════════════════════════════
+// QUESTIONS
+// ════════════════════════════════════
+function getQs() {
+  var p = document.getElementById('stype').value==='tel'?'tel':'phys';
+  return QS[document.getElementById('sposte').value][p];
+}
+
+function addMsg(role, txt) {
+  if(mode==='tel') return;
+  var c=document.getElementById('chat');
+  var d=document.createElement('div'); d.className='msg '+role;
+  var av=document.createElement('div'); av.className='av '+role; av.textContent=role==='rh'?'RH':'Moi';
+  var b=document.createElement('div'); b.className='bub '+role; b.textContent=txt;
+  d.appendChild(av); d.appendChild(b); c.appendChild(d); c.scrollTop=c.scrollHeight;
+}
+
+function showQ() {
+  if(!debloque) return;
+  synth.cancel(); // Annuler toute synthèse en cours avant la nouvelle question
+  var qs=getQs();
+  if(qIdx>=qs.length){finir();return;}
+  var q=qs[qIdx];
+  document.getElementById('plbl').textContent='Q '+(qIdx+1)+'/'+qs.length;
+  document.getElementById('pf').style.width=Math.round(((qIdx+1)/qs.length)*100)+'%';
+  document.getElementById('cs').textContent=mode==='eco'?'':'💡 '+q.h;
+  document.getElementById('fb').className='fb';
+  document.getElementById('rd').textContent='';
+  document.getElementById('rd').className='rd';
+  curText='';
+  if(mode==='tel') {
+    document.getElementById('tst').textContent='Le recruteur parle…';
+    document.getElementById('twv').classList.remove('pause');
+    speak(q.q,'fr-FR',function(){
+      document.getElementById('tst').textContent='À vous — appuyez sur 🎤';
+      document.getElementById('twv').classList.add('pause');
+    });
+  } else {
+    addMsg('rh',q.q);
+    setTimeout(function(){speak(q.q,'fr-FR');},150);
+    if(mode==='oral'||mode==='eco') setTimeout(function(){if(!isRec)startMic();},3000);
+  }
+}
+
+function evalRep(rep) {
+  var n=rep.trim().split(/\s+/).filter(Boolean).length;
+  if(n<3) return{pt:0,cls:'non',ico:'⚠️',lbl:'À améliorer',msg:'Réponse trop courte. Essayez 2 ou 3 phrases.'};
+  if(n<10) return{pt:1,cls:'ok',ico:'💬',lbl:'Correct',msg:'Bonne base ! Ajoutez un exemple concret.'};
+  return{pt:2,cls:'bon',ico:'✅',lbl:'Très bien !',msg:'Excellente réponse — structurée et précise.'};
+}
+
+function valider() {
+  var rep=(curText||document.getElementById('rd').textContent||'').trim();
+  if(!rep){speak('Pouvez-vous repondre a la question','fr-FR');return;}
+  if(isRec) stopMic();
+  addMsg('ca',rep);
+  var ev=evalRep(rep);
+  score+=ev.pt;
+  document.getElementById('pscore').textContent=score+'/'+(qIdx+1)*2;
+  // Feedback
+  var qCur=getQs()[qIdx];
+  var entretienLex=LEX_FULL.filter(function(e){return e.d==='entretien';});
+  var lex=entretienLex[qCur.l]||null;
+  var tr=lex&&lex.t&&lex.t[langSim]||'';
+  var l=LANGS[langSim];
+  document.getElementById('fbt').textContent=ev.ico+' '+ev.lbl;
+  var extra=ev.pt<2&&tr&&lex?('<br><small style="color:#5f5e5a;display:block;margin-top:3px">Expression utile : <strong>'+lex.fr+'</strong><br>'+(l?l.f+' ':'')+tr+'</small>'):'';
+  document.getElementById('fbb').innerHTML=ev.msg+extra;
+  document.getElementById('fb').className='fb on '+ev.cls;
+  // Avancer maintenant
+  qIdx++;
+  // Lire le feedback puis passer à la suite
+  var nextQ=function(){
+    if(qIdx<getQs().length) showQ();
+    else finir();
+  };
+  synth.cancel();
+  var dejaPasse=false; // Eviter double appel à nextQ
+  var avancer=function(){
+    if(dejaPasse) return;
+    dejaPasse=true;
+    // Délai plus long pour laisser l'apprenant lire le feedback
+    setTimeout(nextQ, 2000);
+  };
+  var u=new SpeechSynthesisUtterance(nettoyerTexte(ev.msg));
+  u.lang='fr-FR';
+  u.rate=vitesseEcoute||0.85;
+  u.onend=function(){avancer();};
+  u.onerror=function(){avancer();};
+  synth.speak(u);
+  // Filet de sécurité — délai généreux de 8 secondes
+  setTimeout(avancer, 8000);
+}
+
+function finir() {
+  document.getElementById('rz').style.display='none';
+  var t=getQs().length*2, p=Math.round(score/t*100);
+  var m=p>=80?'Excellent':p>=60?'Bon niveau':p>=40?'À consolider':'À reprendre';
+  document.getElementById('fsc').textContent=score+'/'+t;
+  document.getElementById('fme').textContent=m;
+  document.getElementById('sfin').style.display='block';
+  if(mode!=='tel') addMsg('rh','Merci pour cet entretien. Nous vous recontacterons sous 48 heures. Bonne journée !');
+  else{document.getElementById('tst').textContent='Appel terminé';document.getElementById('twv').classList.add('pause');}
+  // Sauvegarder
+  hist.unshift({
+    prenom:profil?profil.prenom:'Anonyme',
+    date:new Date().toLocaleDateString('fr-FR'),
+    score:score,total:t,pct:p,mention:m,
+    poste:document.getElementById('sposte').value,
+    type:document.getElementById('stype').value
+  });
+  try{localStorage.setItem('ek_hist',JSON.stringify(hist.slice(0,50)));}catch(e){}
+  setTimeout(ecouterBilan,2000);
+  // Toujours proposer la saisie du profil après la séance
+  setTimeout(function(){
+    document.querySelector('#overlay h2').textContent = profil&&profil.prenom ? 'Séance enregistrée !' : 'Entrez votre prénom pour sauvegarder';
+    document.querySelector('#overlay p').textContent = profil&&profil.prenom ? 'Votre séance a été enregistrée sous le nom '+profil.prenom+'.' : 'Entrez votre prénom pour que vos résultats soient enregistrés.';
+    if(profil&&profil.prenom){
+      document.getElementById('inp-prenom').value=profil.prenom;
+      document.getElementById('inp-langue').value=profil.langue||'fr';
+    }
+    document.getElementById('overlay').style.display='flex';
+  }, 4000);
+}
+
+function restart() {
+  qIdx=0;score=0;curText='';
+  synth.cancel();if(isRec)stopMic();
+  document.getElementById('chat').innerHTML='';
+  document.getElementById('fb').className='fb';
+  document.getElementById('sfin').style.display='none';
+  document.getElementById('rz').style.display='block';
+  document.getElementById('rd').textContent='';
+  document.getElementById('rd').className='rd';
+  document.getElementById('pscore').textContent='0/12';
+  if(mode==='tel'){document.getElementById('tst').textContent='En communication…';document.getElementById('twv').classList.remove('pause');}
+  showQ();
+}
+
+function effacer(){curText='';var d=document.getElementById('rd');d.textContent='';d.className='rd';}
+function aide(){
+  var q=getQs()[qIdx];
+  if(!q) return;
+  var entretienLex=LEX_FULL.filter(function(e){return e.d==='entretien';});
+  var lex=entretienLex[q.l];
+  alert('Conseil : '+q.h+(lex?' -- Expression utile : '+lex.fr:''));
+}
+
+// ════════════════════════════════════
+// MODES
+// ════════════════════════════════════
+function setMode(m, el) {
+  mode=m;
+  document.querySelectorAll('.mb').forEach(function(b){b.classList.remove('on','ton');});
+  el.classList.add(m==='tel'?'ton':'on');
+  document.getElementById('tel').classList.toggle('on',m==='tel');
+  document.getElementById('chat-wrap').style.display=m==='tel'?'none':'block';
+  document.getElementById('rz').style.display=m==='eco'?'none':'block';
+  restart();
+}
+
+// ════════════════════════════════════
+// MICRO
+// ════════════════════════════════════
+function initMicro() {
+  if(!hasSTT) {
+    var c=document.getElementById('compat');
+    c.classList.add('on');
+    c.textContent='⚠️ La reconnaissance vocale nécessite Chrome ou Edge. Vous pouvez taper vos réponses.';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream) {
+    micStream=stream;
+    var bm=document.getElementById('bmic');
+    bm.style.borderColor='#1d9e75';bm.style.background='#e1f5ee';bm.style.color='#085041';
+    // Lister micros
+    navigator.mediaDevices.enumerateDevices().then(function(devices) {
+      var micros=devices.filter(function(d){return d.kind==='audioinput';});
+      if(micros.length>1) {
+        var mr=document.getElementById('mic-row');
+        var sel=document.getElementById('mic-sel');
+        mr.style.display='flex';sel.innerHTML='';
+        micros.forEach(function(m,i) {
+          var o=document.createElement('option');
+          o.value=m.deviceId;o.textContent=m.label||('Micro '+(i+1));
+          var lbl=(m.label||'').toLowerCase();
+          if(lbl.indexOf('casque')>=0||lbl.indexOf('headset')>=0||lbl.indexOf('headphone')>=0||lbl.indexOf('usb')>=0){
+            o.selected=true;selMicId=m.deviceId;
+          }
+          sel.appendChild(o);
+        });
+        if(!selMicId&&micros[0]) selMicId=micros[0].deviceId;
+      }
+    }).catch(function(){});
+  }).catch(function(err) {
+    var c=document.getElementById('compat');c.classList.add('on');
+    if(err.name==='NotAllowedError')
+      c.innerHTML='🔒 Accès micro refusé. Cliquez sur le cadenas dans la barre d\'adresse → Microphone → Autoriser → rechargez.';
+    else if(err.name==='NotFoundError')
+      c.innerHTML='🎤 Aucun micro détecté. Vérifiez que votre casque est branché.';
+    else
+      c.innerHTML='⚠️ Micro inaccessible ('+err.name+'). Vous pouvez taper vos réponses.';
+  });
+}
+
+function buildRec() {
+  if(!hasSTT) return null;
+  var r=getSharedRec();
+  if(!r) return null;
+  r.interimResults=true;
+  r.continuous=true; // le simulateur doit capter des réponses longues, pas une seule phrase courte
+  r.onresult=function(e) {
+    var interim='',final='';
+    for(var i=e.resultIndex;i<e.results.length;i++) {
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    var d=document.getElementById('rd');
+    d.textContent=(curText?(curText+' '):'')+(final||interim);
+    d.classList.toggle('li',!!interim&&!final);
+    d.classList.toggle('ok',!!(curText||final));
+    if(final) curText=(curText?curText+' '+final:final).trim();
+    document.getElementById('mic-lvl').textContent=interim?'🟢 Voix captée':'';
+  };
+  r.onstart=function(){document.getElementById('mic-lvl').textContent='🟢 Micro actif — parlez…';};
+  r.onspeechend=function(){document.getElementById('mic-lvl').textContent='⏳ Traitement…';};
+  r.onend=function(){setMicUI(false);document.getElementById('mic-lvl').textContent='';};
+  r.onerror=function(e) {
+    setMicUI(false);document.getElementById('mic-lvl').textContent='';
+    if(e.error!=='aborted') {
+      var c=document.getElementById('compat');c.classList.add('on');
+      c.textContent='❌ '+(e.error==='no-speech'?'Aucune voix détectée — parlez plus fort.':'Erreur micro : '+e.error);
+    }
+  };
+  return r;
+}
+
+function setMicUI(on) {
+  isRec=on;
+  var b=document.getElementById('bmic');
+  var s=document.getElementById('recst');
+  if(on){b.classList.add('rec');b.textContent='⏹ Stop';s.style.display='block';}
+  else{b.classList.remove('rec');b.textContent='🎤 Parler';s.style.display='none';}
+}
+
+function startMic() {
+  if(!hasSTT){ diagnostiquerCompatibiliteVocale(); return; }
+  synth.cancel();
+  if(recognition){try{recognition.stop();}catch(e){}}
+  recognition=buildRec();
+  if(recognition) setTimeout(function(){
+    try{
+      recognition.start();
+      setMicUI(true);
+    }catch(e){
+      console.warn(e);
+      var c=document.getElementById('compat');
+      if(c){
+        c.classList.add('on');
+        c.innerHTML='⚠️ Impossible de démarrer le micro : '+(e.message||e.name||'erreur inconnue')+'. Si le navigateur a demandé une autorisation micro, vérifiez qu\'elle a bien été acceptée (icône dans la barre d\'adresse).';
+      }
+    }
+  },100);
+}
+function stopMic() {
+  if(recognition){try{recognition.stop();}catch(e){}}
+  setMicUI(false);
+}
+function toggleMic(){if(isRec)stopMic();else startMic();}
+
+function toggleMicTel() {
+  var b=document.getElementById('tmic');
+  if(isRec){stopMic();b.classList.remove('rec');setTimeout(function(){valider();},500);}
+  else{
+    recognition=buildRec();
+    if(recognition){
+      try{
+        recognition.start();
+        setMicUI(true);
+        b.classList.add('rec');
+      }catch(e){
+        console.warn(e);
+        var c=document.getElementById('compat');
+        if(c){
+          c.classList.add('on');
+          c.innerHTML='⚠️ Impossible de démarrer le micro : '+(e.message||e.name||'erreur inconnue')+'.';
+        }
+      }
+    }
+  }
+}
+function finirAppel(){synth.cancel();setMode('mix',document.getElementById('m-mix'));}
+
+// ════════════════════════════════════
+// LEXIQUE
+// ════════════════════════════════════
+function renderLex() {
+  renderDomPills();
+  initPills('lpills-lex',langLex,function(k){langLex=k;renderLexCards();});
+  renderLexCards();
+}
+var lexDom='entretien';
+var domLabels={entretien:'💼 Entretien',atelier:'🧵 Atelier',formation:'🎓 Formation',numerique:'💻 Numérique',vente:'🛒 Vente',dpp:'📋 DPP',etudes:'📚 Études',client:'🤝 Client',reunion:'👥 Réunion',securite:'⚠️ Sécurité',admin:'📝 Admin',absences:'⚕️ Absences'};
+
+function renderDomPills(){
+  var wrap=document.getElementById('dom-pills');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  Object.keys(domLabels).forEach(function(k){
+    var b=document.createElement('button');
+    b.className='lp'+(k===lexDom?' on':'');
+    b.textContent=domLabels[k];
+    b.onclick=function(){lexDom=k;wrap.querySelectorAll('.lp').forEach(function(x){x.classList.remove('on');});b.classList.add('on');renderLexCards();};
+    wrap.appendChild(b);
+  });
+}
+
+function renderLexCards() {
+  var grid=document.getElementById('lex-grid');
+  grid.innerHTML='';
+  var l=LANGS[langLex];
+  var items=LEX_FULL.filter(function(item){return item.d===lexDom;});
+  if(!items.length){
+    grid.textContent='Aucune expression dans ce domaine.';return;
+  }
+  items.forEach(function(item) {
+    var tr=(item.t&&item.t[langLex])||'';
+    var card=document.createElement('div');
+    card.className='lex-card';
+    var frDiv=document.createElement('div');frDiv.className='lex-fr';frDiv.textContent=item.fr;
+    var ctxDiv=document.createElement('div');ctxDiv.className='lex-ctx';ctxDiv.textContent=item.ctx||'';
+    var exDiv=document.createElement('div');exDiv.className='lex-ex';exDiv.textContent=item.ex?'Ex : '+item.ex:'';
+    card.appendChild(frDiv);
+    card.appendChild(ctxDiv);
+    if(tr){
+      var trDiv=document.createElement('div');trDiv.className='lex-tr';
+      if(l&&l.d==='rtl') trDiv.setAttribute('dir','rtl');
+      trDiv.textContent=(l?l.f+' ':'')+tr;
+      card.appendChild(trDiv);
+    }
+    card.appendChild(exDiv);
+    // Boutons audio expression
+    var btn1=document.createElement('button');btn1.className='abtn';btn1.textContent='🔊 Expression FR';
+    btn1.onclick=(function(f){return function(){speak(f,'fr-FR');};})(item.fr);
+    card.appendChild(btn1);
+    if(tr&&l){
+      var btn2=document.createElement('button');btn2.className='abtn';btn2.textContent='🔊 '+l.n;
+      btn2.onclick=(function(t,c){return function(){speak(t,c);};})(tr,l.c);
+      card.appendChild(btn2);
+    }
+    // Bouton audio exemple
+    if(item.ex){
+      var btnEx=document.createElement('button');
+      btnEx.className='abtn';
+      btnEx.style.background='#faeeda';
+      btnEx.style.color='#854f0b';
+      btnEx.style.borderColor='#ba7517';
+      btnEx.textContent='🔊 Exemple';
+      btnEx.onclick=(function(ex){return function(){speak(ex,'fr-FR');};})(item.ex);
+      card.appendChild(btnEx);
+      // Bouton micro pour lire l'exemple
+      if(hasSTT){
+        // Div feedback transcription
+      var feedbackDiv=document.createElement('div');
+      feedbackDiv.style.cssText='display:none;margin-top:.5rem;background:#f4f3ef;border:1px solid #ccc;border-radius:7px;padding:.5rem .75rem;font-size:12px';
+      var btnMic=document.createElement('button');
+        btnMic.className='abtn';
+        btnMic.style.background='#fcebeb';
+        btnMic.style.color='#a32d2d';
+        btnMic.style.borderColor='#e24b4a';
+        btnMic.textContent='🎤 Me lire';
+        btnMic.onclick=(function(ex, bm, fd){
+          var recLex=null;
+          return function(){
+            if(!hasSTT){alert('Micro non disponible.');return;}
+            // Si déjà en écoute — arrêter
+            if(recLex){
+              try{recLex.stop();}catch(e){}
+              terminerSessionRec(recSessionStopper);
+              recLex=null;
+              bm.textContent='🎤 Me lire';
+              bm.style.background='#fcebeb';
+              bm.style.color='#a32d2d';
+              return;
+            }
+            // Cacher le feedback précédent
+            fd.style.display='none';
+            // Lire l'exemple
+            bm.textContent='⏳ Écoute...';
+            bm.style.background='#faeeda';
+            bm.style.color='#854f0b';
+            synth.cancel();
+            var u=new SpeechSynthesisUtterance(nettoyerTexte(ex));
+            u.lang='fr-FR'; u.rate=0.85;
+            u.onend=function(){
+              setTimeout(function(){
+                bm.textContent='⏹ Cliquez ici pour arrêter';
+                bm.style.background='#e24b4a';
+                bm.style.color='#fff';
+                recLex=getSharedRec();
+                if(!recLex){
+                  bm.textContent='🎤 Me lire';
+                  bm.style.background='#fcebeb';
+                  bm.style.color='#a32d2d';
+                  return;
+                }
+                recLex.interimResults=true;
+                recLex.continuous=false;
+                // Empêcher toute session précédente (autre carte) de continuer à accumuler des résultats
+                var stopperLex=function(){
+                  try{recLex.abort();}catch(e){}
+                  bm.textContent='🎤 Me lire';
+                  bm.style.background='#fcebeb';
+                  bm.style.color='#a32d2d';
+                };
+                demarrerNouvelleSessionRec(stopperLex);
+                var dernierTexte=''; // Variable dédiée pour stocker la transcription
+                recLex.onresult=function(e){
+                  var txt='';
+                  for(var i=0;i<e.results.length;i++) txt+=e.results[i][0].transcript;
+                  dernierTexte=txt; // Stocker le texte complet
+                  bm.textContent='🟢 '+txt.substring(0,40)+(txt.length>40?'...':'');
+                };
+                recLex.onerror=function(ev){
+                  if(ev.error!=='aborted'){
+                    bm.textContent='❌ '+ev.error+' — réessayez';
+                    bm.style.background='#fcebeb';
+                    bm.style.color='#a32d2d';
+                  }
+                  recLex=null;
+                };
+                recLex.onend=function(){
+                  // Ne plus redémarrer automatiquement : chaque redémarrage de la reconnaissance
+                  // vocale peut déclencher une nouvelle vérification d'autorisation micro par le
+                  // navigateur. On finalise donc la session ici ; l'apprenant reclique s'il veut réessayer.
+                  terminerSessionRec(stopperLex);
+                  recLex=null;
+                  bm.textContent='🎤 Me lire';
+                  bm.style.background='#fcebeb';
+                  bm.style.color='#a32d2d';
+                  // Afficher le feedback avec dernierTexte
+                  if(dernierTexte && dernierTexte.length>2){
+                    // Vider et reconstruire via DOM (pas innerHTML pour éviter les problèmes d'apostrophes)
+                    fd.innerHTML='';
+                    var t1=document.createElement('div');t1.style.cssText='color:#5f5e5a;margin-bottom:.35rem;font-weight:700';t1.textContent='Vous avez dit :';
+                    var t2=document.createElement('div');t2.style.cssText='color:#1c1c1c;font-style:italic;margin-bottom:.5rem';t2.textContent=dernierTexte;
+                    var t3=document.createElement('div');t3.style.cssText='color:#5f5e5a;margin-bottom:.35rem;font-weight:700';t3.textContent='Exemple original :';
+                    var t4=document.createElement('div');t4.style.cssText='color:#085041;margin-bottom:.5rem';t4.textContent=ex;
+                    var b1=document.createElement('button');b1.className='abtn';b1.style.cssText='background:#e6f1fb;color:#0c447c;border-color:#378add;margin-right:4px';b1.textContent="🔊 Réécouter exemple";
+                    b1.onclick=(function(e){return function(){speak(e,'fr-FR');};})(ex);
+                    var b2=document.createElement('button');b2.className='abtn';b2.style.cssText='background:#e1f5ee;color:#085041;border-color:#1d9e75';b2.textContent='🔊 Entendre ma phrase';
+                    b2.onclick=(function(t){return function(){speak(t,'fr-FR');};})(dernierTexte);
+                    fd.appendChild(t1);fd.appendChild(t2);fd.appendChild(t3);fd.appendChild(t4);fd.appendChild(b1);fd.appendChild(b2);
+                    fd.style.display='block';
+                  }
+                };
+                try{recLex.start();}catch(e){
+                  bm.textContent='🎤 Me lire';
+                  bm.style.background='#fcebeb';
+                  bm.style.color='#a32d2d';
+                  recLex=null;
+                }
+                // Arrêt auto 60s
+                setTimeout(function(){if(recLex){try{recLex.stop();}catch(e){}}},120000); // délai allongé pour laisser le temps de répondre
+              },600);
+            };
+            synth.speak(u);
+          };
+        })(item.ex, btnMic, feedbackDiv);
+        card.appendChild(btnMic);
+        card.appendChild(feedbackDiv);
+      }
+    }
+    grid.appendChild(card);
+  });
+}
+
+// ════════════════════════════════════
+// GRAMMAIRE & CONJUGAISON
+// ════════════════════════════════════
+var gramMode='regles';
+var gramNiv='A1';
+var gramNivLabels={A1:'A1', A2:'A2', B1:'B1', B2:'B2'};
+
+function setGramMode(m, el) {
+  gramMode = m;
+  document.querySelectorAll('#panel-gram .mb').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  document.getElementById('gram-regles-wrap').style.display = (m==='regles') ? 'block' : 'none';
+  document.getElementById('gram-conj-wrap').style.display = (m==='conj') ? 'block' : 'none';
+  document.getElementById('gram-exo-wrap').style.display = (m==='exo') ? 'block' : 'none';
+  if(m==='regles') renderGram();
+  if(m==='conj') renderConj();
+  if(m==='exo') renderExo();
+}
+
+function renderGram() {
+  renderGramNivPills();
+  initPills('lpills-gram', langLex, function(k){ langLex=k; renderGramCards(); });
+  renderGramCards();
+  renderConjPills();
+}
+
+function renderGramNivPills() {
+  var wrap=document.getElementById('gramniv-pills');
+  if(!wrap) return;
+  wrap.innerHTML='';
+  Object.keys(gramNivLabels).forEach(function(k){
+    var b=document.createElement('button');
+    b.className='lp'+(k===gramNiv?' on':'');
+    b.textContent=gramNivLabels[k];
+    b.onclick=function(){ gramNiv=k; wrap.querySelectorAll('.lp').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); renderGramCards(); };
+    wrap.appendChild(b);
+  });
+}
+
+function renderGramCards() {
+  var grid=document.getElementById('gram-grid');
+  if(!grid) return;
+  grid.innerHTML='';
+  var l=LANGS[langLex];
+  var items=GRAM_FULL.filter(function(item){return item.niveau===gramNiv;});
+  if(!items.length){
+    grid.textContent='Aucun contenu pour ce niveau pour le moment.';return;
+  }
+  items.forEach(function(item) {
+    var tr=(item.t&&item.t[langLex])||'';
+    var card=document.createElement('div');
+    card.className='lex-card';
+    var titreDiv=document.createElement('div');titreDiv.className='lex-fr';titreDiv.style.fontWeight='700';titreDiv.textContent=item.titre;
+    var regleDiv=document.createElement('div');regleDiv.className='lex-ctx';regleDiv.textContent=item.regle;
+    card.appendChild(titreDiv);
+    card.appendChild(regleDiv);
+    if(tr){
+      var trDiv=document.createElement('div');trDiv.className='lex-tr';
+      if(l&&l.d==='rtl') trDiv.setAttribute('dir','rtl');
+      trDiv.textContent=(l?l.f+' ':'')+tr;
+      card.appendChild(trDiv);
+    }
+    // Boutons audio règle : français + langue d'origine (comme dans le Lexique)
+    var btnRegleFr=document.createElement('button');btnRegleFr.className='abtn';btnRegleFr.textContent='🔊 Règle FR';
+    btnRegleFr.onclick=(function(r){return function(){speak(r,'fr-FR');};})(item.regle);
+    card.appendChild(btnRegleFr);
+    if(tr&&l){
+      var btnRegleTr=document.createElement('button');btnRegleTr.className='abtn';btnRegleTr.textContent='🔊 '+l.n;
+      btnRegleTr.onclick=(function(t,c){return function(){speak(t,c);};})(tr,l.c);
+      card.appendChild(btnRegleTr);
+    }
+    (item.exemples||[]).forEach(function(ex,idxEx){
+      var exTr=(item.exTr&&item.exTr[langLex]&&idxEx===0)?item.exTr[langLex]:'';
+      var exDiv=document.createElement('div');exDiv.className='lex-ex';exDiv.textContent='Ex : '+ex;
+      card.appendChild(exDiv);
+      if(exTr&&l){
+        var exTrDiv=document.createElement('div');exTrDiv.className='lex-tr';
+        if(l.d==='rtl') exTrDiv.setAttribute('dir','rtl');
+        exTrDiv.textContent=l.f+' '+exTr;
+        card.appendChild(exTrDiv);
+      }
+      var btnEx=document.createElement('button');
+      btnEx.className='abtn';
+      btnEx.style.background='#faeeda';btnEx.style.color='#854f0b';btnEx.style.borderColor='#ba7517';
+      btnEx.textContent='🔊 '+ex;
+      btnEx.onclick=(function(e){return function(){speak(e,'fr-FR');};})(ex);
+      card.appendChild(btnEx);
+      if(exTr&&l){
+        var btnExTr=document.createElement('button');
+        btnExTr.className='abtn';
+        btnExTr.style.background='#e6f1fb';btnExTr.style.color='#0c447c';btnExTr.style.borderColor='#378add';
+        btnExTr.textContent='🔊 '+l.n+' (traduction)';
+        btnExTr.onclick=(function(t,c){return function(){speak(t,c);};})(exTr,l.c);
+        card.appendChild(btnExTr);
+      }
+      card.appendChild(creerBoutonMeLire(ex, 'gram', item.titre));
+    });
+    grid.appendChild(card);
+  });
+}
+
+function renderConjPills() {
+  var wrap=document.getElementById('conj-pills');
+  if(!wrap) return;
+  wrap.innerHTML='';
+  CONJ_FULL.forEach(function(item,idx){
+    var b=document.createElement('button');
+    b.className='lp'+(idx===0?' on':'');
+    b.textContent=item.verbe;
+    b.onclick=function(){ wrap.querySelectorAll('.lp').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); renderConjTable(item.verbe); };
+    wrap.appendChild(b);
+  });
+}
+
+function renderConj() {
+  renderTempsPills();
+  renderConjPills();
+  if(CONJ_FULL.length) renderConjTable(CONJ_FULL[0].verbe);
+}
+
+function renderTempsPills() {
+  var wrap=document.getElementById('temps-pills');
+  if(!wrap) return;
+  wrap.innerHTML='';
+  Object.keys(TEMPS_LABELS).forEach(function(k){
+    var b=document.createElement('button');
+    b.className='lp'+(k===tempsActif?' on':'');
+    b.textContent=TEMPS_LABELS[k];
+    b.onclick=function(){
+      tempsActif=k;
+      wrap.querySelectorAll('.lp').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      var activeVerbBtn=document.querySelector('#conj-pills .lp.on');
+      renderConjTable(activeVerbBtn?activeVerbBtn.textContent:CONJ_FULL[0].verbe);
+    };
+    wrap.appendChild(b);
+  });
+}
+
+function renderConjTable(verbe) {
+  var wrap=document.getElementById('conj-table');
+  if(!wrap) return;
+  wrap.innerHTML='';
+  var item=CONJ_FULL.filter(function(v){return v.verbe===verbe;})[0];
+  if(!item){ wrap.textContent='Verbe non trouvé.'; return; }
+  var formes = item[tempsActif] || item.present;
+  var box=document.createElement('div');
+  box.style.cssText='background:#fff;border:1px solid #ccc;border-radius:9px;padding:.75rem';
+  var titre=document.createElement('div');
+  titre.style.cssText='font-size:14px;font-weight:700;color:#085041;margin-bottom:.25rem';
+  titre.textContent=item.verbe+' — '+(TEMPS_LABELS[tempsActif]||'Présent');
+  var groupe=document.createElement('div');
+  groupe.style.cssText='font-size:11px;color:#5f5e5a;margin-bottom:.6rem';
+  groupe.textContent=item.groupe;
+  box.appendChild(titre);
+  box.appendChild(groupe);
+  formes.forEach(function(row){
+    var line=document.createElement('div');
+    line.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:1px solid #eee';
+    var txt=document.createElement('span');
+    txt.style.fontSize='13px';
+    txt.textContent=row.p+' '+row.f;
+    var btn=document.createElement('button');
+    btn.className='abtn';
+    btn.textContent='🔊';
+    btn.onclick=(function(phrase){return function(){speak(phrase,'fr-FR');};})(row.p+' '+row.f);
+    line.appendChild(txt);
+    line.appendChild(btn);
+    box.appendChild(line);
+  });
+  box.appendChild(creerBoutonMeLire(item.verbe+' ('+(TEMPS_LABELS[tempsActif]||'Présent')+') : '+formes.map(function(r){return r.p+' '+r.f;}).join(', '), 'conj', item.verbe+' — '+(TEMPS_LABELS[tempsActif]||'Présent')));
+  wrap.appendChild(box);
+}
+
+// ════════════════════════════════════
+// EXERCICES À TROU — réponse vocale
+// ════════════════════════════════════
+var exoIdx = 0;
+
+function normaliserTexte(s) {
+  return (s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // enlever les accents
+    .replace(/[^a-z0-9\s]/g,'') // enlever la ponctuation
+    .trim();
+}
+
+function renderExo() {
+  var zone = document.getElementById('exo-zone');
+  var compteur = document.getElementById('exo-compteur');
+  if(!zone) return;
+  if(!EXO_FULL.length){ zone.textContent='Aucun exercice disponible.'; return; }
+  if(exoIdx<0) exoIdx=EXO_FULL.length-1;
+  if(exoIdx>=EXO_FULL.length) exoIdx=0;
+  var item=EXO_FULL[exoIdx];
+  compteur.textContent=(exoIdx+1)+' / '+EXO_FULL.length;
+
+  zone.innerHTML='';
+  var card=document.createElement('div');
+  card.className='lex-card';
+
+  var phraseDiv=document.createElement('div');
+  phraseDiv.style.cssText='font-size:15px;font-weight:600;margin-bottom:.5rem';
+  phraseDiv.textContent=(item.avant?item.avant+' ':'')+'_____ '+item.apres;
+  card.appendChild(phraseDiv);
+
+  var indiceDiv=document.createElement('div');
+  indiceDiv.className='lex-ctx';
+  indiceDiv.textContent='💡 '+item.indice;
+  card.appendChild(indiceDiv);
+
+  var resultDiv=document.createElement('div');
+  resultDiv.style.cssText='display:none;margin-top:.6rem;padding:.5rem .75rem;border-radius:7px;font-size:13px';
+  card.appendChild(resultDiv);
+
+  if(!hasSTT){
+    var noStt=document.createElement('div');
+    noStt.style.cssText='font-size:12px;color:#854f0b;background:#faeeda;border-radius:7px;padding:.5rem .75rem;margin-top:.5rem';
+    noStt.textContent='⚠️ La reconnaissance vocale n\'est pas disponible sur ce navigateur (Chrome ou Edge recommandé).';
+    card.appendChild(noStt);
+    zone.appendChild(card);
+    return;
+  }
+
+  var btnRep=document.createElement('button');
+  btnRep.className='abtn';
+  btnRep.style.cssText='background:#fcebeb;color:#a32d2d;border-color:#e24b4a;margin-top:.5rem';
+  btnRep.textContent='🎤 Répondre';
+  var recExoActive=null;
+  btnRep.onclick=function(){
+    if(!hasSTT){alert('Micro non disponible.');return;}
+    if(recExoActive){
+      try{recExoActive.stop();}catch(e){}
+      terminerSessionRec(recSessionStopper);
+      recExoActive=null;
+      btnRep.textContent='🎤 Répondre';
+      return;
+    }
+    resultDiv.style.display='none';
+    btnRep.textContent='🎤 Écoute… dites le mot manquant';
+    var rec=getSharedRec();
+    if(!rec){ btnRep.textContent='🎤 Répondre'; return; }
+    recExoActive=rec;
+    rec.interimResults=true;
+    rec.continuous=false;
+    // Empêcher toute session précédente (autre exercice) de continuer à accumuler des résultats
+    var stopperExo=function(){
+      try{recExoActive.abort();}catch(e){}
+      btnRep.textContent='🎤 Répondre';
+    };
+    demarrerNouvelleSessionRec(stopperExo);
+    var dernierTexte='';
+    rec.onresult=function(e){
+      var txt='';
+      for(var i=0;i<e.results.length;i++) txt+=e.results[i][0].transcript;
+      dernierTexte=txt;
+      btnRep.textContent='🟢 '+txt.substring(0,40)+(txt.length>40?'...':'');
+    };
+    rec.onerror=function(ev){
+      if(ev.error!=='aborted'){
+        btnRep.textContent='❌ '+ev.error+' — réessayez';
+      }
+      recExoActive=null;
+    };
+    rec.onend=function(){
+      terminerSessionRec(stopperExo);
+      recExoActive=null;
+      btnRep.textContent='🎤 Répondre';
+      if(dernierTexte && dernierTexte.length>0){
+        incrementTrainingCount('exo', item.theme+' — '+item.trou);
+        var dit=normaliserTexte(dernierTexte);
+        var attendu=normaliserTexte(item.trou);
+        var correct = dit.indexOf(attendu)>=0;
+        resultDiv.style.display='block';
+        resultDiv.style.background = correct ? '#e1f5ee' : '#fcebeb';
+        resultDiv.style.color = correct ? '#085041' : '#a32d2d';
+        resultDiv.innerHTML='';
+        var t0=document.createElement('div');
+        t0.style.fontWeight='700';
+        t0.textContent = correct ? '✓ Bonne réponse !' : '✗ Pas tout à fait — réessayez';
+        var t1=document.createElement('div');
+        t1.style.cssText='margin-top:.3rem';
+        t1.textContent='Vous avez dit : « '+dernierTexte+' »';
+        var t2=document.createElement('div');
+        t2.style.cssText='margin-top:.3rem;color:#085041';
+        t2.textContent='Réponse attendue : « '+item.trou+' »';
+        resultDiv.appendChild(t0);
+        resultDiv.appendChild(t1);
+        resultDiv.appendChild(t2);
+        var b1=document.createElement('button');
+        b1.className='abtn';
+        b1.style.cssText='margin-top:.4rem;margin-right:4px';
+        b1.textContent='🔊 Entendre ma réponse';
+        b1.onclick=(function(t){return function(){speak(t,'fr-FR');};})(dernierTexte);
+        var b2=document.createElement('button');
+        b2.className='abtn';
+        b2.style.cssText='margin-top:.4rem;background:#e1f5ee;color:#085041;border-color:#1d9e75';
+        b2.textContent='🔊 Entendre la phrase complète';
+        b2.onclick=(function(p){return function(){speak(p,'fr-FR');};})(item.phrase);
+        resultDiv.appendChild(b1);
+        resultDiv.appendChild(b2);
+      }
+    };
+    try{rec.start();}catch(e){
+      btnRep.textContent='🎤 Répondre';
+      recExoActive=null;
+    }
+    setTimeout(function(){if(recExoActive){try{recExoActive.stop();}catch(e){}}},60000); // délai allongé pour laisser le temps de répondre
+  };
+  card.appendChild(btnRep);
+  zone.appendChild(card);
+}
+
+function exoSuivant(){ exoIdx++; renderExo(); }
+function exoPrecedent(){ exoIdx--; renderExo(); }
+
+// ════════════════════════════════════
+// RAPPELS
+// ════════════════════════════════════
+var JOURS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+var FREQ_DAYS={3:[0,2,4],5:[0,1,2,3,4],7:[0,1,2,3,4,5,6]};
+var MSGS=['💪 Entraînement · 15 min','📚 Vocabulaire · 10 min','🎯 Révision · 15 min'];
+
+function setFreq(n,el) {
+  freqSel=n;
+  document.querySelectorAll('.fc').forEach(function(c){c.classList.remove('on');});
+  el.classList.add('on');renderPlanning();
+}
+function renderPlanning() {
+  var wrap=document.getElementById('plan-wrap');if(!wrap)return;
+  var days=FREQ_DAYS[freqSel];wrap.innerHTML='';
+  JOURS.forEach(function(j,i) {
+    var on=days.indexOf(i)>=0;
+    var row=document.createElement('div');row.className='plan-row';
+    row.innerHTML='<span class="dp '+(on?'on':'off')+'">'+j+'</span>'
+      +'<span style="font-size:12px;color:'+(on?'#1c1c1c':'#b4b2a9')+'">'+(on?MSGS[days.indexOf(i)%3]:'Repos')+'</span>';
+    wrap.appendChild(row);
+  });
+  // Calculer le prochain jour d'entraînement
+  var aujourd = new Date();
+  var jourSemaine = aujourd.getDay(); // 0=dim, 1=lun...
+  // Convertir : JS commence dimanche, nous lundi
+  var jourJS = (jourSemaine + 6) % 7; // 0=lun, 1=mar...
+  var prochainJour = -1;
+  var prochainDans = 8;
+  for(var i=1; i<=7; i++) {
+    var jourTest = (jourJS + i) % 7;
+    if(days.indexOf(jourTest) >= 0) {
+      prochainJour = jourTest;
+      prochainDans = i;
+      break;
+    }
+  }
+  // Si aujourd'hui est un jour d'entraînement
+  if(days.indexOf(jourJS) >= 0) {
+    prochainJour = jourJS;
+    prochainDans = 0;
+  }
+  var el_jour = document.getElementById('prochain-jour');
+  var el_date = document.getElementById('prochain-date');
+  if(el_jour && prochainJour >= 0) {
+    var dateProchain = new Date(aujourd);
+    dateProchain.setDate(aujourd.getDate() + prochainDans);
+    var options = {weekday:'long', day:'numeric', month:'long'};
+    var dateStr = dateProchain.toLocaleDateString('fr-FR', options);
+    el_jour.textContent = prochainDans === 0 ? "Aujourd'hui !" : JOURS[prochainJour];
+    el_date.textContent = prochainDans === 0 ? "C'est votre jour d'entraînement !" : dateStr;
+    el_jour.style.color = prochainDans === 0 ? '#085041' : '#1d9e75';
+  }
+}
+// copierSMS supprimé — SMS déplacé dans MO formateur
+
+// ════════════════════════════════════
+// PROGRESSION
+// ════════════════════════════════════
+function renderProg() {
+  renderTrainStats();
+  document.getElementById('stsea').textContent=hist.length;
+  if(!hist.length){
+    document.getElementById('stbst').textContent='—';
+    document.getElementById('stmoy').textContent='—';
+    document.getElementById('stpro').textContent='—';
+    document.getElementById('hist-wrap').innerHTML='<div style="text-align:center;padding:1.5rem">Aucune séance enregistrée.</div>';
+    return;
+  }
+  var pcts=hist.map(function(h){return h.pct;});
+  document.getElementById('stbst').textContent=Math.max.apply(null,pcts)+'%';
+  document.getElementById('stmoy').textContent=Math.round(pcts.reduce(function(a,b){return a+b;},0)/pcts.length)+'%';
+  var prog=hist.length>1?Math.round(pcts[0]-pcts[pcts.length-1]):0;
+  document.getElementById('stpro').textContent=(prog>=0?'+':'')+prog+'%';
+  var rows=hist.map(function(h){
+    return '<tr><td>'+( h.prenom||'?')+'</td><td>'+h.date+'</td><td>'+h.score+'/'+h.total+'</td>'
+      +'<td style="color:'+(h.pct>=80?'#085041':h.pct>=60?'#854f0b':'#a32d2d')+'">'+h.pct+'%</td>'
+      +'<td>'+h.mention+'</td></tr>';
+  }).join('');
+  document.getElementById('hist-wrap').innerHTML=
+    '<table class="hist-t"><thead><tr><th>Prénom</th><th>Date</th><th>Score</th><th>%</th><th>Mention</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function exporterResultats(){
+  if(!hist.length){
+    alert('Aucune seance enregistree. Effectuez au moins une seance avant de lancer l export.');
+    return;
+  }
+  var prenom=profil&&profil.prenom?profil.prenom:'Apprenant';
+  var langue=profil&&profil.langue?profil.langue:'fr';
+  var date=new Date().toLocaleDateString('fr-FR');
+  var pcts=hist.map(function(h){return h.pct;});
+  var meilleur=Math.max.apply(null,pcts);
+  var moyen=Math.round(pcts.reduce(function(a,b){return a+b;},0)/pcts.length);
+  var evolution=hist.length>1?Math.round(pcts[0]-pcts[pcts.length-1]):0;
+
+  var lignes=[
+    '=== RAPPORT DE PROGRESSION EKITEE ===',
+    'Apprenant : '+prenom,
+    'Langue maternelle : '+langue,
+    'Date du rapport : '+date,
+    '',
+    '--- STATISTIQUES ---',
+    'Nombre de séances : '+hist.length,
+    'Meilleur score : '+meilleur+'%',
+    'Score moyen : '+moyen+'%',
+    'Evolution : '+(evolution>=0?'+':'')+evolution+'%',
+    '',
+    '--- DÉTAIL DES SÉANCES ---',
+  ];
+
+  hist.forEach(function(h,i){
+    lignes.push((i+1)+'. '+h.date+' | '+h.score+'/'+h.total+' pts | '+h.pct+'% | '+h.mention+' | '+(h.poste||'')+(h.type?' ('+h.type+')':''));
+  });
+
+  lignes.push('');
+  lignes.push('Document généré par le Simulateur EKITEE - ekitee-simulateur.netlify.app');
+
+  var rapport=lignes.join('\n');
+
+  // Option 1 : ouvrir un email pré-rempli
+  var sujet=encodeURIComponent('Résultats simulateur EKITEE — '+prenom+' — '+date);
+  var corps=encodeURIComponent(rapport);
+  var mailtoLink='mailto:marieangeles.perez@gmail.com?subject='+sujet+'&body='+corps;
+
+  // Option 2 : copier dans le presse-papier
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(rapport).then(function(){
+      var msg='Rapport copie. Voulez-vous ouvrir votre messagerie ?';
+      if(confirm(msg)){
+        window.open(mailtoLink,'_blank');
+      }
+    }).catch(function(){
+      window.open(mailtoLink,'_blank');
+    });
+  } else {
+    window.open(mailtoLink,'_blank');
+  }
+}
+
+function clearHist(){
+  hist=[];try{localStorage.removeItem('ek_hist');}catch(e){}renderProg();
+}
+
+// ════════════════════════════════════
+// COMPTEURS D'ENTRAÎNEMENT — GRAMMAIRE & CONJUGAISON
+// ════════════════════════════════════
+var trainStats = { gram:{}, conj:{}, exo:{} };
+try{ var tsRaw=localStorage.getItem('ek_train_stats'); if(tsRaw) trainStats=JSON.parse(tsRaw); }catch(e){}
+if(!trainStats.gram) trainStats.gram={};
+if(!trainStats.conj) trainStats.conj={};
+if(!trainStats.exo) trainStats.exo={};
+
+function saveTrainStats(){
+  try{ localStorage.setItem('ek_train_stats', JSON.stringify(trainStats)); }catch(e){}
+}
+
+function incrementTrainingCount(categorie, cle){
+  if(categorie!=='gram' && categorie!=='conj' && categorie!=='exo') return;
+  if(!trainStats[categorie][cle]) trainStats[categorie][cle]=0;
+  trainStats[categorie][cle]++;
+  saveTrainStats();
+  renderTrainStats();
+}
+
+function clearTrainStats(){
+  trainStats={gram:{},conj:{},exo:{}};
+  try{ localStorage.removeItem('ek_train_stats'); }catch(e){}
+  renderTrainStats();
+}
+
+function sommeStats(obj){
+  return Object.keys(obj).reduce(function(a,k){return a+obj[k];},0);
+}
+
+function renderTrainStats(){
+  var gramEl=document.getElementById('sttgram');
+  var conjEl=document.getElementById('sttconj');
+  var exoEl=document.getElementById('sttexo');
+  var totEl=document.getElementById('stttot');
+  if(!gramEl||!conjEl||!totEl) return;
+  var totalGram=sommeStats(trainStats.gram);
+  var totalConj=sommeStats(trainStats.conj);
+  var totalExo=sommeStats(trainStats.exo);
+  gramEl.textContent=totalGram;
+  conjEl.textContent=totalConj;
+  if(exoEl) exoEl.textContent=totalExo;
+  totEl.textContent=totalGram+totalConj+totalExo;
+
+  var detailWrap=document.getElementById('train-detail-wrap');
+  if(!detailWrap) return;
+  if(totalGram+totalConj+totalExo===0){
+    detailWrap.innerHTML='<div style="text-align:center;padding:.75rem">Aucun entraînement grammaire/conjugaison/exercices enregistré pour le moment.</div>';
+    return;
+  }
+  var lignes=[];
+  Object.keys(trainStats.gram).sort(function(a,b){return trainStats.gram[b]-trainStats.gram[a];}).forEach(function(k){
+    lignes.push('<div style="display:flex;justify-content:space-between;padding:.2rem 0;border-bottom:1px solid #eee"><span>📖 '+k+'</span><span style="font-weight:700">'+trainStats.gram[k]+'</span></div>');
+  });
+  Object.keys(trainStats.conj).sort(function(a,b){return trainStats.conj[b]-trainStats.conj[a];}).forEach(function(k){
+    lignes.push('<div style="display:flex;justify-content:space-between;padding:.2rem 0;border-bottom:1px solid #eee"><span>🔤 '+k+'</span><span style="font-weight:700">'+trainStats.conj[k]+'</span></div>');
+  });
+  Object.keys(trainStats.exo).sort(function(a,b){return trainStats.exo[b]-trainStats.exo[a];}).forEach(function(k){
+    lignes.push('<div style="display:flex;justify-content:space-between;padding:.2rem 0;border-bottom:1px solid #eee"><span>✏️ '+k+'</span><span style="font-weight:700">'+trainStats.exo[k]+'</span></div>');
+  });
+  detailWrap.innerHTML=lignes.join('');
+}
+
+// ════════════════════════════════════
+// BOUTON "ME LIRE" RÉUTILISABLE — Grammaire & Conjugaison
+// (même mécanisme que le lexique : synthèse vocale + reconnaissance + comptage d'entraînement)
+// ════════════════════════════════════
+function creerBoutonMeLire(texte, categorie, cle){
+  var wrap=document.createElement('div');
+  wrap.style.cssText='margin-top:.35rem';
+  if(!hasSTT){
+    return wrap; // pas de reconnaissance vocale disponible sur ce navigateur — pas de bouton
+  }
+  var feedbackDiv=document.createElement('div');
+  feedbackDiv.style.cssText='display:none;margin-top:.5rem;background:#f4f3ef;border:1px solid #ccc;border-radius:7px;padding:.5rem .75rem;font-size:12px';
+  var btnMic=document.createElement('button');
+  btnMic.className='abtn';
+  btnMic.style.background='#fcebeb';
+  btnMic.style.color='#a32d2d';
+  btnMic.style.borderColor='#e24b4a';
+  btnMic.textContent='🎤 M\'entraîner';
+  var recActive=null;
+  btnMic.onclick=function(){
+    if(!hasSTT){alert('Micro non disponible.');return;}
+    if(recActive){
+      try{recActive.stop();}catch(e){}
+      terminerSessionRec(recSessionStopper);
+      recActive=null;
+      btnMic.textContent='🎤 M\'entraîner';
+      btnMic.style.background='#fcebeb';
+      btnMic.style.color='#a32d2d';
+      return;
+    }
+    // Un clic sur "M'entraîner" compte comme une répétition d'entraînement
+    incrementTrainingCount(categorie, cle);
+    feedbackDiv.style.display='none';
+    btnMic.textContent='⏳ Écoute...';
+    btnMic.style.background='#faeeda';
+    btnMic.style.color='#854f0b';
+    synth.cancel();
+    var u=new SpeechSynthesisUtterance(nettoyerTexte(texte));
+    u.lang='fr-FR'; u.rate=0.85;
+    u.onend=function(){
+      setTimeout(function(){
+        btnMic.textContent='⏹ Cliquez ici pour arrêter';
+        btnMic.style.background='#e24b4a';
+        btnMic.style.color='#fff';
+        var recNouv=getSharedRec();
+        if(!recNouv){
+          btnMic.textContent='🎤 M\'entraîner';
+          btnMic.style.background='#fcebeb';
+          btnMic.style.color='#a32d2d';
+          return;
+        }
+        recActive=recNouv;
+        recActive.lang='fr-FR';
+        recActive.interimResults=true;
+        recActive.continuous=false;
+        // Empêcher toute session précédente (autre carte) de continuer à accumuler des résultats
+        var stopperGram=function(){
+          try{recActive.abort();}catch(e){}
+          btnMic.textContent='🎤 M\'entraîner';
+          btnMic.style.background='#fcebeb';
+          btnMic.style.color='#a32d2d';
+        };
+        demarrerNouvelleSessionRec(stopperGram);
+        var dernierTexte='';
+        recActive.onresult=function(e){
+          var txt='';
+          for(var i=0;i<e.results.length;i++) txt+=e.results[i][0].transcript;
+          dernierTexte=txt;
+          btnMic.textContent='🟢 '+txt.substring(0,40)+(txt.length>40?'...':'');
+        };
+        recActive.onerror=function(ev){
+          if(ev.error!=='aborted'){
+            btnMic.textContent='❌ '+ev.error+' — réessayez';
+            btnMic.style.background='#fcebeb';
+            btnMic.style.color='#a32d2d';
+          }
+          recActive=null;
+        };
+        recActive.onend=function(){
+          // Ne plus redémarrer automatiquement : chaque redémarrage de la reconnaissance
+          // vocale peut déclencher une nouvelle vérification d'autorisation micro par le
+          // navigateur. On finalise donc la session ici ; l'apprenant reclique s'il veut réessayer.
+          terminerSessionRec(stopperGram);
+          recActive=null;
+          btnMic.textContent='🎤 M\'entraîner';
+          btnMic.style.background='#fcebeb';
+          btnMic.style.color='#a32d2d';
+          if(dernierTexte && dernierTexte.length>2){
+            feedbackDiv.innerHTML='';
+            var t1=document.createElement('div');t1.style.cssText='color:#5f5e5a;margin-bottom:.35rem;font-weight:700';t1.textContent='Vous avez dit :';
+            var t2=document.createElement('div');t2.style.cssText='color:#1c1c1c;font-style:italic;margin-bottom:.5rem';t2.textContent=dernierTexte;
+            var b2=document.createElement('button');b2.className='abtn';b2.style.cssText='background:#e1f5ee;color:#085041;border-color:#1d9e75';b2.textContent='🔊 Entendre ma phrase';
+            b2.onclick=(function(t){return function(){speak(t,'fr-FR');};})(dernierTexte);
+            feedbackDiv.appendChild(t1);feedbackDiv.appendChild(t2);feedbackDiv.appendChild(b2);
+            feedbackDiv.style.display='block';
+          }
+        };
+        try{recActive.start();}catch(e){
+          btnMic.textContent='🎤 M\'entraîner';
+          btnMic.style.background='#fcebeb';
+          btnMic.style.color='#a32d2d';
+          recActive=null;
+        }
+        setTimeout(function(){if(recActive){try{recActive.stop();}catch(e){}}},120000); // délai allongé pour laisser le temps de répondre
+      },600);
+    };
+    synth.speak(u);
+  };
+  wrap.appendChild(btnMic);
+  wrap.appendChild(feedbackDiv);
+  return wrap;
+}
+
+// ════════════════════════════════════
+// DÉMARRAGE
+// ════════════════════════════════════
+function resetProfil() {
+  try{localStorage.removeItem('ek_profil');}catch(e){}
+  profil = null;
+  document.getElementById('inp-prenom').value = '';
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+// Bouton de la modale
+// Boutons modale attaches en HTML
+
+// Initialiser les pills langues
+initPills('lpills-sim','fr',function(k){langSim=k;});
+
+// NE PAS démarrer ici — le démarrage se fait après vérification du mot de passe
+</script>
+</body>
+</html>
