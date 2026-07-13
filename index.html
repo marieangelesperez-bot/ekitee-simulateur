@@ -1576,7 +1576,7 @@ function setVitesse(val){
   });
 }
 
-function speak(txt, code, cb) {
+function speak(txt, code, cb, estRepli) {
   if(!synth||!txt||!debloque) return;
   synth.cancel();
   var u = new SpeechSynthesisUtterance(nettoyerTexte(txt));
@@ -1590,8 +1590,25 @@ function speak(txt, code, cb) {
   // (arabe, dari, ukrainien) et donnait un accent français à d'autres (roumain, turc,
   // vietnamien, wolof). Laisser le navigateur choisir automatiquement à partir de u.lang
   // est le comportement qui fonctionnait bien auparavant ; on le restaure ici.
+  //
+  // Filet de sécurité supplémentaire : certains navigateurs ne trouvent aucune voix pour
+  // un code régional précis (ex. « en-GB » alors que seul « en-US » est installé) et
+  // échouent totalement au lieu de proposer une voix proche. Si ça se produit et qu'on
+  // n'a pas encore essayé, on retente une fois avec le code de langue générique (sans
+  // région, ex. « en » au lieu de « en-GB »).
   if(cb) u.onend = cb;
-  synth.speak(u);
+  u.onerror = function(){
+    if(!estRepli && code && code.indexOf('-')>0){
+      speak(txt, code.split('-')[0], cb, true);
+    }
+  };
+  try{
+    synth.speak(u);
+  }catch(e){
+    if(!estRepli && code && code.indexOf('-')>0){
+      speak(txt, code.split('-')[0], cb, true);
+    }
+  }
 }
 function rejouer() {
   var qs=getQs(); if(qIdx<qs.length) speak(qs[qIdx].q,'fr-FR');
