@@ -411,9 +411,17 @@ var debloque = false; // Simulateur bloqué jusqu'à validation du mot de passe
 // ce qui provoquait une erreur bloquant l'exécution de tout le reste du script, y compris le lexique et le quiz)
 var synth = window.speechSynthesis;
 
-// Précharger les voix dès le début
+// Cache des voix disponibles — le navigateur charge la liste des voix de façon ASYNCHRONE.
+// Un premier appel à getVoices() juste après le chargement de la page renvoie souvent une
+// liste VIDE, avant que l'événement 'voiceschanged' ne fournisse la vraie liste (avec les
+// voix arabe, dari, ukrainienne, etc.). Sans ce cache, une phrase lue trop tôt peut se
+// retrouver sans voix adaptée et basculer sur la voix par défaut du navigateur (souvent
+// une voix française), ce qui explique un "accent français" sur une langue étrangère.
+var voicesCache = [];
+function rafraichirVoicesCache(){ voicesCache = synth.getVoices() || []; }
+rafraichirVoicesCache();
 if(synth && synth.onvoiceschanged !== undefined) {
-  synth.onvoiceschanged = function(){ synth.getVoices(); };
+  synth.onvoiceschanged = function(){ rafraichirVoicesCache(); };
 }
 
 function verifierMdp() {
@@ -1331,7 +1339,7 @@ var QS = {
 // ════════════════════════════════════
 // ÉTAT GLOBAL
 // ════════════════════════════════════
-var qIdx=0, score=0, mode='mix', langSim='fr', langLex='fr';
+var qIdx=0, score=0, mode='mix', langSim='fr', langLex='fr', qAttempts=0;
 var isRec=false, recognition=null, curText='', selMicId='', micStream=null;
 var freqSel=3;
 var profil=null;
@@ -1546,7 +1554,8 @@ function nettoyerTexte(txt) {
 }
 
 function meilleureVoix(code) {
-  var voix = synth.getVoices();
+  if(!voicesCache.length) rafraichirVoicesCache(); // tentative de rattrapage si pas encore chargées
+  var voix = voicesCache;
   var lang = code || 'fr-FR';
   // Chercher une voix native pour la langue
   var candidates = voix.filter(function(v){ return v.lang === lang; });
@@ -1575,14 +1584,36 @@ function setVitesse(val){
   });
 }
 
-function speak(txt, code, cb) {
+function speak(txt, code, cb, tentative) {
   if(!synth||!txt||!debloque) return;
+  tentative = tentative || 0;
+  // Si la liste des voix n'est pas encore chargée par le navigateur (cas fréquent au tout
+  // premier appel), on retente quelques fois après un court délai avant de lire la phrase,
+  // plutôt que de parler immédiatement avec une voix par défaut potentiellement inadaptée.
+  // Plafonné à 5 tentatives (~1,5s) pour ne jamais bloquer si aucune voix ne charge jamais.
+  if(!voicesCache.length && tentative<5){
+    rafraichirVoicesCache();
+    if(!voicesCache.length){
+      setTimeout(function(){ speak(txt, code, cb, tentative+1); }, 300);
+      return;
+    }
+  }
   synth.cancel();
   var u = new SpeechSynthesisUtterance(nettoyerTexte(txt));
   u.lang = code||'fr-FR';
   u.rate = vitesseEcoute||0.85;
   var voix = meilleureVoix(code||'fr-FR');
-  if(voix) u.voice = voix;
+  if(voix){
+    u.voice = voix;
+  } else if(code && code!=='fr-FR' && code.indexOf('fr')!==0){
+    // Aucune voix trouvée pour cette langue sur cet appareil/navigateur — avertir
+    // clairement plutôt que de laisser deviner pourquoi la lecture sonne "en français".
+    var c=document.getElementById('compat');
+    if(c){
+      c.classList.add('on');
+      c.innerHTML='⚠️ Aucune voix « '+code+' » n\'est installée sur cet appareil/navigateur — le texte va être lu avec la voix par défaut. Sur Windows : Paramètres > Heure et langue > Voix, pour ajouter des voix supplémentaires. Sur Chrome/Android, ce sont les voix du système qui sont utilisées.';
+    }
+  }
   if(cb) u.onend = cb;
   synth.speak(u);
 }
@@ -1617,6 +1648,7 @@ function showQ() {
   var qs=getQs();
   if(qIdx>=qs.length){finir();return;}
   var q=qs[qIdx];
+  qAttempts=0; // Réinitialiser le compteur de tentatives pour cette nouvelle question
   document.getElementById('plbl').textContent='Q '+(qIdx+1)+'/'+qs.length;
   document.getElementById('pf').style.width=Math.round(((qIdx+1)/qs.length)*100)+'%';
   document.getElementById('cs').textContent=mode==='eco'?'':'💡 '+q.h;
@@ -1651,6 +1683,37 @@ function valider() {
   if(isRec) stopMic();
   addMsg('ca',rep);
   var ev=evalRep(rep);
+
+  // Réponse trop courte ET pas encore réessayé sur cette question : on laisse une vraie
+  // seconde chance au lieu de dire "essayez 2 ou 3 phrases" puis d'enchaîner quand même
+  // sur la question suivante sans laisser le temps de répondre.
+  if(ev.pt===0 && qAttempts<1){
+    qAttempts++;
+    document.getElementById('fbt').textContent=ev.ico+' '+ev.lbl;
+    document.getElementById('fbb').innerHTML=ev.msg+'<br><small style="color:#5f5e5a;display:block;margin-top:3px">Vous pouvez répondre à nouveau maintenant.</small>';
+    document.getElementById('fb').className='fb on '+ev.cls;
+    document.getElementById('rd').textContent='';
+    document.getElementById('rd').className='rd';
+    curText='';
+    synth.cancel();
+    var u2=new SpeechSynthesisUtterance(nettoyerTexte(ev.msg));
+    u2.lang='fr-FR';
+    u2.rate=vitesseEcoute||0.85;
+    var relancerEcoute=function(){
+      if(mode==='tel'){
+        document.getElementById('tst').textContent='À vous — appuyez sur 🎤';
+        document.getElementById('twv').classList.add('pause');
+      } else if(mode==='oral'||mode==='eco'){
+        if(!isRec) startMic();
+      }
+    };
+    u2.onend=relancerEcoute;
+    u2.onerror=relancerEcoute;
+    synth.speak(u2);
+    setTimeout(relancerEcoute, 6000); // filet de sécurité si la synthèse vocale échoue
+    return; // Ne pas avancer à la question suivante
+  }
+
   score+=ev.pt;
   document.getElementById('pscore').textContent=score+'/'+(qIdx+1)*2;
   // Feedback
