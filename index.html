@@ -1553,19 +1553,11 @@ function nettoyerTexte(txt) {
     .trim();
 }
 
-function meilleureVoix(code) {
-  if(!voicesCache.length) rafraichirVoicesCache(); // tentative de rattrapage si pas encore chargées
-  var voix = voicesCache;
-  var lang = code || 'fr-FR';
-  // Chercher une voix native pour la langue
-  var candidates = voix.filter(function(v){ return v.lang === lang; });
-  if(!candidates.length) candidates = voix.filter(function(v){ return v.lang.startsWith(lang.split('-')[0]); });
-  // Préférer les voix locales (non réseau)
-  var locale = candidates.filter(function(v){ return v.localService; });
-  if(locale.length) return locale[0];
-  if(candidates.length) return candidates[0];
-  return null;
-}
+// Note : la sélection manuelle de voix (fonction meilleureVoix) a été retirée — elle
+// provoquait un accent français ou un silence total sur plusieurs langues (arabe, dari,
+// ukrainien, roumain, turc, vietnamien, wolof) quand aucune voix locale ne correspondait
+// exactement. On laisse désormais le navigateur choisir automatiquement via u.lang dans
+// speak(), comportement qui fonctionnait de façon fiable.
 
 var vitesseEcoute = 0.85;
 try{ var ve=localStorage.getItem('ek_vitesse'); if(ve) vitesseEcoute=parseFloat(ve); }catch(e){}
@@ -1584,36 +1576,20 @@ function setVitesse(val){
   });
 }
 
-function speak(txt, code, cb, tentative) {
+function speak(txt, code, cb) {
   if(!synth||!txt||!debloque) return;
-  tentative = tentative || 0;
-  // Si la liste des voix n'est pas encore chargée par le navigateur (cas fréquent au tout
-  // premier appel), on retente quelques fois après un court délai avant de lire la phrase,
-  // plutôt que de parler immédiatement avec une voix par défaut potentiellement inadaptée.
-  // Plafonné à 5 tentatives (~1,5s) pour ne jamais bloquer si aucune voix ne charge jamais.
-  if(!voicesCache.length && tentative<5){
-    rafraichirVoicesCache();
-    if(!voicesCache.length){
-      setTimeout(function(){ speak(txt, code, cb, tentative+1); }, 300);
-      return;
-    }
-  }
   synth.cancel();
   var u = new SpeechSynthesisUtterance(nettoyerTexte(txt));
   u.lang = code||'fr-FR';
   u.rate = vitesseEcoute||0.85;
-  var voix = meilleureVoix(code||'fr-FR');
-  if(voix){
-    u.voice = voix;
-  } else if(code && code!=='fr-FR' && code.indexOf('fr')!==0){
-    // Aucune voix trouvée pour cette langue sur cet appareil/navigateur — avertir
-    // clairement plutôt que de laisser deviner pourquoi la lecture sonne "en français".
-    var c=document.getElementById('compat');
-    if(c){
-      c.classList.add('on');
-      c.innerHTML='⚠️ Aucune voix « '+code+' » n\'est installée sur cet appareil/navigateur — le texte va être lu avec la voix par défaut. Sur Windows : Paramètres > Heure et langue > Voix, pour ajouter des voix supplémentaires. Sur Chrome/Android, ce sont les voix du système qui sont utilisées.';
-    }
-  }
+  // Volontairement, on NE choisit PAS manuellement la voix (pas de u.voice = ...).
+  // Une version antérieure de ce fichier essayait de sélectionner elle-même la meilleure
+  // voix disponible (fonction meilleureVoix), et retombait sur la voix par défaut du
+  // navigateur (souvent une voix française) quand aucune voix locale ne correspondait
+  // exactement à la langue demandée — ce qui cassait complètement certaines langues
+  // (arabe, dari, ukrainien) et donnait un accent français à d'autres (roumain, turc,
+  // vietnamien, wolof). Laisser le navigateur choisir automatiquement à partir de u.lang
+  // est le comportement qui fonctionnait bien auparavant ; on le restaure ici.
   if(cb) u.onend = cb;
   synth.speak(u);
 }
