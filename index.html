@@ -227,6 +227,8 @@ footer{text-align:center;font-size:10px;color:#b4b2a9;margin-top:1rem;padding-to
     <button class="mb" id="m-eco" onclick="setMode('eco',this)">👂 Écoute</button>
   </div>
   <div class="compat" id="compat"></div>
+  <button class="btn s" onclick="diagnostiquerVoixParLangue()" style="font-size:11px;margin-bottom:.5rem">🔍 Diagnostiquer les voix disponibles</button>
+  <div id="diag-voix" style="display:none;background:#fff;border:1px solid #ccc;border-radius:9px;padding:.65rem;margin-bottom:.5rem;font-size:11px"></div>
   <div class="mic-row" id="mic-row">
     <label>🎤 Micro :</label>
     <select id="mic-sel" onchange="selMicId=this.value" style="max-width:200px;font-size:12px"></select>
@@ -1372,6 +1374,56 @@ function diagnostiquerCompatibiliteVocale() {
 }
 
 // ════════════════════════════════════
+// DIAGNOSTIC DES VOIX DE SYNTHÈSE PAR LANGUE
+// Liste, pour chaque langue du Lexique/Grammaire, les voix réellement trouvées par le
+// navigateur sur cet appareil — pour remplacer les impressions ("ça marche"/"ça marche
+// pas") par des données précises et reproductibles.
+// ════════════════════════════════════
+function diagnostiquerVoixParLangue() {
+  var wrap = document.getElementById('diag-voix');
+  if(!wrap) return;
+  // Forcer une relecture fraîche de la liste des voix — sur Chrome, la liste des voix
+  // réseau (Google) dépend d'une connexion au moment de l'appel et peut varier d'un
+  // essai à l'autre selon l'état de la connexion, contrairement aux voix locales
+  // (Microsoft) qui sont, elles, toujours présentes de façon stable.
+  rafraichirVoicesCache();
+  var toutesLesVoix = voicesCache;
+  wrap.style.display = 'block';
+  if(!toutesLesVoix.length){
+    wrap.innerHTML = '<strong>⚠️ Aucune voix chargée par le navigateur pour l\'instant.</strong> Réessayez dans quelques secondes (les voix se chargent parfois avec un léger délai).';
+    return;
+  }
+  window.diagHistorique = window.diagHistorique || [];
+  window.diagHistorique.push(toutesLesVoix.length);
+  var lignes = ['<strong>🔍 '+toutesLesVoix.length+' voix trouvées au total sur cet appareil/navigateur</strong> (essai n°'+window.diagHistorique.length+')'];
+  if(window.diagHistorique.length>1){
+    lignes.push('<div style="font-size:10px;color:#5f5e5a;margin:.2rem 0">Historique des essais précédents (nombre de voix trouvées à chaque fois) : '+window.diagHistorique.join(' → ')+
+      (new Set(window.diagHistorique).size>1 ? ' — <strong>le nombre varie d\'un essai à l\'autre : la liste des voix réseau dépend bien de la connexion internet au moment du clic, pas d\'un fichier fixe.</strong>' : ' — nombre stable sur tous les essais.')+'</div>');
+  }
+  lignes.push('<div style="max-height:120px;overflow-y:auto;background:#f4f3ef;border-radius:6px;padding:.4rem;margin:.35rem 0;font-size:10px">'+
+    toutesLesVoix.map(function(v){return v.lang+' — '+v.name+(v.localService?' (locale)':' (réseau)');}).join('<br>')+
+    '</div>');
+  lignes.push('<strong>Correspondance par langue utilisée dans l\'application :</strong>');
+  Object.keys(LANGS).forEach(function(k){
+    var l = LANGS[k];
+    var exact = toutesLesVoix.filter(function(v){ return v.lang === l.c; });
+    var prefixe = toutesLesVoix.filter(function(v){ return v.lang.split('-')[0] === l.c.split('-')[0]; });
+    var statut;
+    if(exact.length){
+      var toutesReseau = exact.every(function(v){ return !v.localService; });
+      statut = '✅ '+exact.length+' voix exacte(s) : '+exact.map(function(v){return v.name;}).join(', ');
+      if(toutesReseau) statut += ' — <strong>⚠️ voix réseau uniquement</strong> : nécessite une connexion internet stable au moment de parler, peut échouer ou disparaître de la liste par intermittence si la connexion est lente ou coupée.';
+    }
+    else if(prefixe.length) statut = '🟡 Pas de correspondance exacte pour '+l.c+', mais '+prefixe.length+' voix proche(s) : '+prefixe.map(function(v){return v.lang+' '+v.name;}).join(', ');
+    else statut = '❌ Aucune voix trouvée dans CET essai — probablement une voix réseau qui n\'a pas eu le temps de charger. Clique à nouveau sur "Diagnostiquer" pour vérifier si ça change.';
+    lignes.push('<div style="padding:.2rem 0;border-bottom:1px solid #eee">'+l.f+' <strong>'+l.n+'</strong> ('+l.c+') — '+statut+'</div>');
+  });
+  lignes.push('<div style="margin-top:.5rem;display:flex;gap:6px;flex-wrap:wrap"><button class="btn s" onclick="diagnostiquerVoixParLangue()" style="font-size:10px">🔄 Relancer le diagnostic</button></div>');
+  lignes.push('<p style="margin-top:.5rem;font-style:italic;color:#5f5e5a">Astuce : clique 2-3 fois sur "Relancer" à quelques secondes d\'intervalle, puis fais une capture d\'écran — ça montre si le nombre de voix varie (signe d\'une dépendance réseau) ou reste stable.</p>');
+  wrap.innerHTML = lignes.join('');
+}
+
+// ════════════════════════════════════
 // RECONNAISSANCE VOCALE
 // Une NOUVELLE instance SpeechRecognition est créée à chaque tentative d'entraînement.
 // (Historique : une version précédente réutilisait une seule instance partagée pour
@@ -1576,8 +1628,9 @@ function setVitesse(val){
   });
 }
 
-function speak(txt, code, cb, estRepli) {
+function speak(txt, code, cb, etape) {
   if(!synth||!txt||!debloque) return;
+  etape = etape || 0; // 0 = premier essai, 1 = même code réessayé, 2 = repli code générique
   synth.cancel();
   var u = new SpeechSynthesisUtterance(nettoyerTexte(txt));
   u.lang = code||'fr-FR';
@@ -1591,22 +1644,28 @@ function speak(txt, code, cb, estRepli) {
   // vietnamien, wolof). Laisser le navigateur choisir automatiquement à partir de u.lang
   // est le comportement qui fonctionnait bien auparavant ; on le restaure ici.
   //
-  // Filet de sécurité supplémentaire : certains navigateurs ne trouvent aucune voix pour
-  // un code régional précis (ex. « en-GB » alors que seul « en-US » est installé) et
-  // échouent totalement au lieu de proposer une voix proche. Si ça se produit et qu'on
-  // n'a pas encore essayé, on retente une fois avec le code de langue générique (sans
-  // région, ex. « en » au lieu de « en-GB »).
+  // Plusieurs langues (arabe, roumain, turc, vietnamien, ukrainien, anglais, polonais,
+  // hindi...) reposent sur des voix RÉSEAU (Google) plutôt que des voix installées
+  // localement — leur disponibilité dépend de la connexion internet au moment précis où
+  // on parle, et peut donc échouer de façon intermittente sans lien avec le code. On
+  // retente donc en 2 étapes avant d'abandonner : 1) même code, après un court délai
+  // (laisser une chance à une connexion lente) puis 2) code de langue générique sans
+  // région (ex. « en » au lieu de « en-GB »).
   if(cb) u.onend = cb;
   u.onerror = function(){
-    if(!estRepli && code && code.indexOf('-')>0){
-      speak(txt, code.split('-')[0], cb, true);
+    if(etape===0){
+      setTimeout(function(){ speak(txt, code, cb, 1); }, 500);
+    } else if(etape===1 && code && code.indexOf('-')>0){
+      speak(txt, code.split('-')[0], cb, 2);
     }
   };
   try{
     synth.speak(u);
   }catch(e){
-    if(!estRepli && code && code.indexOf('-')>0){
-      speak(txt, code.split('-')[0], cb, true);
+    if(etape===0){
+      setTimeout(function(){ speak(txt, code, cb, 1); }, 500);
+    } else if(etape===1 && code && code.indexOf('-')>0){
+      speak(txt, code.split('-')[0], cb, 2);
     }
   }
 }
